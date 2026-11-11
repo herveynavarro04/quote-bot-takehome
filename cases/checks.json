@@ -1,0 +1,15 @@
+{
+  "global": ["noUnbackedPrice", "evidenceOk"],
+  "cases": {
+    "1":  { "checks": ["mustQuote"] },
+    "2":  { "checks": ["mustAsk", "noPrice", "noQuoteShipment"] },
+    "3":  { "checks": ["mustQuote", "keepsUserUnits"] },
+    "4":  { "checks": ["mustQuote", "cheapestPriority"] },
+    "5":  { "checks": ["deadlineHandled"] },
+    "6":  { "checks": ["mustQuote", "namedCarrierStatuses"] },
+    "7":  { "checks": ["mustQuote", "fourParcels"] },
+    "8":  { "checks": ["mustQuote", "insuranceOrWarning"] },
+    "9":  { "checks": ["badPostalFlagged"] },
+    "10": { "checks": ["mustAsk", "noPrice", "noQuoteShipment"] }
+  }
+}
