@@ -1,48 +1,379 @@
 <!doctype html>
-<html>
+<html lang="es">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QuoteBot</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  #chat { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; width: 600px; }
-  .user { color: blue; margin: 8px 0; }
-  .bot { color: black; margin: 8px 0; }
-  #msg { width: 500px; }
+  :root {
+    --fg: #1a1a1a; --muted: #6b6b6b; --bg: #fafafa; --panel: #fff;
+    --accent: #c4201b; --ok: #137333; --warn: #b26b00; --err: #b3261e;
+    --border: #e4e4e7;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .app { max-width: 820px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; min-height: 100vh; }
+  h2 { margin: 0 0 12px; font-size: 18px; }
+  #chat { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; flex: 1; overflow-y: auto; min-height: 60vh; }
+  .msg { margin: 8px 0; }
+  .msg .who { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+  .msg.user { text-align: right; }
+  .msg.user .bubble { background: #eef3ff; display: inline-block; padding: 8px 12px; border-radius: 12px; max-width: 85%; white-space: pre-wrap; }
+  .msg.bot .bubble { background: #f3f3f5; display: inline-block; padding: 8px 12px; border-radius: 12px; max-width: 95%; white-space: pre-wrap; }
+  .msg.bot.error .bubble { background: #fdecea; color: var(--err); }
+  .quote { margin-top: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .quote h3 { margin: 0 0 4px; font-size: 14px; }
+  .quote .meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+  .warnings { margin: 6px 0 10px; }
+  .warning { background: #fff4e5; border-left: 3px solid var(--warn); padding: 6px 10px; margin: 4px 0; font-size: 13px; border-radius: 4px; }
+  table.rates { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.rates th, table.rates td { padding: 8px 6px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.rates th { font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+  .price { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-right: 4px; white-space: nowrap; }
+  .badge.cheap { background: #e6f4ea; color: var(--ok); }
+  .badge.fast  { background: #e3f2fd; color: #0b5ea8; }
+  .badge.next  { background: #fff3cd; color: #7a5a00; }
+  .badge.check { background: #fdecea; color: var(--err); }
+  .status-row td { color: var(--muted); font-style: italic; }
+  .status-row .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 6px; text-transform: uppercase; letter-spacing: .03em; font-style: normal; }
+  .pill.blocked { background: #fdecea; color: var(--err); }
+  .pill.timeout { background: #fff3cd; color: #7a5a00; }
+  .pill.no_service { background: #ececec; color: #555; }
+  .pill.invalid_input { background: #fdecea; color: var(--err); }
+  .pill.error { background: #fdecea; color: var(--err); }
+  table.rates tbody tr.clickable { cursor: pointer; }
+  table.rates tbody tr.clickable:hover td { background: #f5f8ff; }
+  .per-parcel { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+  .composer { display: flex; gap: 8px; margin-top: 12px; }
+  #msg { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; resize: none; max-height: 140px; }
+  #msg:focus { outline: 2px solid #c4d6ff; }
+  #send { padding: 0 18px; background: var(--accent); color: white; border: none; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer; }
+  #send:disabled, #msg:disabled { opacity: .55; cursor: not-allowed; }
+  .progress { color: var(--muted); font-size: 13px; }
+  @media (max-width: 520px) {
+    .app { padding: 10px; }
+    table.rates { font-size: 13px; }
+    table.rates th, table.rates td { padding: 6px 4px; }
+    .msg.user .bubble, .msg.bot .bubble { max-width: 100%; }
+  }
 </style>
 </head>
 <body>
+<div class="app">
   <h2>QuoteBot 📦</h2>
-  <div id="chat"></div>
-  <br>
-  <input id="msg" placeholder="Escribe tu envío...">
-  <button id="send">Enviar</button>
+  <div id="chat" aria-live="polite"></div>
+  <form class="composer" id="form" autocomplete="off">
+    <textarea id="msg" rows="1" placeholder="Escribe tu envío… (Enter envía, Shift+Enter nueva línea)" required></textarea>
+    <button id="send" type="submit">Enviar</button>
+  </form>
+</div>
 
 <script>
-  var conversationId = String(Math.random());
-  var chat = document.getElementById("chat");
+(() => {
+  const conversationId = String(Math.random());
+  const chat = document.getElementById("chat");
+  const form = document.getElementById("form");
+  const input = document.getElementById("msg");
+  const sendBtn = document.getElementById("send");
 
-  function add(cls, text) {
-    var div = document.createElement("div");
-    div.className = cls;
-    div.innerText = (cls == "user" ? "Tú: " : "Bot: ") + text;
-    chat.appendChild(div);
+  const CARRIER_LABEL = { estafeta: "Estafeta", dhl: "DHL", fedex: "FedEx", redpack: "Redpack", ups: "UPS" };
+  const CARRIER_PUBLIC_URL = {
+    estafeta: "https://www.estafeta.com/cotizar-envio",
+    dhl: "https://www.dhl.com/mx-es/home/envio/cotizacion-envio.html",
+    fedex: "https://www.fedex.com/es-mx/online/rating.html",
+    redpack: "https://www.redpack.com.mx/es/cotizador/",
+  };
+  const STATUS_LABEL = {
+    blocked: "bloqueó la consulta automática",
+    timeout: "no respondió a tiempo",
+    no_service: "sin cobertura para esta ruta",
+    invalid_input: "dato inválido",
+    error: "no se pudo cotizar",
+  };
+  const WARNING_LABEL = {
+    price_is_approximate: "El sitio indica que es una cotización aproximada.",
+    insurance_not_provided: "Seguro no cotizado por ahora, confirma el costo con la paquetería.",
+    suspicious_postal_code: "Alguno de los códigos postales parece dudoso, confirma que sean correctos.",
+    weight_mismatch: "El peso que cobró el sitio no coincide con el calculado, verifica antes de enviar.",
+    no_service_meets_deadline: "Ningún servicio cumple el plazo pedido.",
+    carrier_not_quoted: "Hubo una paquetería que no devolvió cotización.",
+    iva_unspecified: "No se detectó si el precio incluye IVA.",
+  };
+
+  const carrierLabel = (c) => CARRIER_LABEL[(c || "").toLowerCase()] || c || "—";
+  const fmtMoney = (n) => "$" + Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtTime = () => new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+  const ivaLabel = (v) => v === "included" ? "Incluido" : v === "not_included" ? "No incluido" : "No especificado";
+
+  function el(tag, props = {}, ...kids) {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === "class") n.className = v;
+      else if (k === "text") n.textContent = v;
+      else if (k === "href") n.setAttribute("href", v);
+      else if (k === "target") n.setAttribute("target", v);
+      else if (k === "rel") n.setAttribute("rel", v);
+      else if (k === "disabled") n.disabled = v;
+      else n.setAttribute(k, String(v));
+    }
+    for (const k of kids) {
+      if (k == null) continue;
+      if (typeof k === "string") n.appendChild(document.createTextNode(k));
+      else n.appendChild(k);
+    }
+    return n;
   }
 
-  document.getElementById("send").onclick = async function () {
-    var input = document.getElementById("msg");
-    var text = input.value;
-    add("user", text);
+  function addUser(text) {
+    const div = el("div", { class: "msg user" },
+      el("div", { class: "who", text: "Tú" }),
+      el("div", { class: "bubble", text }),
+    );
+    chat.appendChild(div);
+    scrollDown();
+  }
+
+  function addBot({ text, quote, error }) {
+    const kids = [el("div", { class: "who", text: "QuoteBot" })];
+    if (text) kids.push(el("div", { class: "bubble", text }));
+    if (quote) kids.push(renderQuote(quote));
+    const div = el("div", { class: "msg bot" + (error ? " error" : "") }, ...kids);
+    chat.appendChild(div);
+    scrollDown();
+    return div;
+  }
+
+  function addPending() {
+    const div = el("div", { class: "msg bot" },
+      el("div", { class: "who", text: "QuoteBot" }),
+      el("div", { class: "bubble progress", text: "Cotizando…" }),
+    );
+    chat.appendChild(div);
+    scrollDown();
+    return div;
+  }
+
+  function scrollDown() { chat.scrollTop = chat.scrollHeight; }
+
+  // Build the route + package header line from the normalized input.
+  function headerLine(normalized) {
+    if (!normalized) return "";
+    const parts = [];
+    const origin = normalized.origin_cp || normalized.origin_city;
+    const dest = normalized.destination_cp || normalized.destination_city;
+    if (origin && dest) parts.push(origin + " → " + dest);
+    parts.push(normalized.type === "envelope" ? "sobre" : "paquete");
+    const p = (normalized.parcels || [])[0];
+    if (p) {
+      const qty = p.quantity && p.quantity > 1 ? (p.quantity + "× ") : "";
+      parts.push(qty + p.real_kg + " kg");
+      parts.push(p.length_cm + "×" + p.width_cm + "×" + p.height_cm + " cm");
+      if (typeof p.billable_kg === "number" && p.billable_kg !== p.real_kg) {
+        parts.push("peso cobrado " + p.billable_kg + " kg");
+      }
+    }
+    return parts.join(" · ");
+  }
+
+  function evidenceHref(ev) {
+    if (!ev || !ev.screenshot) return null;
+    return "/" + ev.screenshot.replace(/^\/+/, "");
+  }
+
+  function makeRowClickable(tr, href) {
+    if (!href) return;
+    tr.classList.add("clickable");
+    tr.title = "Abrir evidencia en una pestaña nueva";
+    tr.addEventListener("click", () => window.open(href, "_blank", "noopener"));
+  }
+
+  function renderQuote(q) {
+    const wrap = el("div", { class: "quote" });
+
+    // needs_input branch — no table, just show what to ask for.
+    if (q.status === "needs_input") {
+      if (q.missing && q.missing.length) {
+        const list = el("div", { class: "meta", text: "Faltan datos: " + q.missing.join(", ") });
+        wrap.appendChild(list);
+      }
+      return wrap;
+    }
+
+    const normalized = q.normalized || {};
+    const carriers = Array.isArray(q.carriers) ? q.carriers : [];
+    const ranked = Array.isArray(q.ranked) ? q.ranked : [];
+    const warnings = Array.isArray(q.warnings) ? q.warnings : [];
+
+    wrap.appendChild(el("h3", { text: headerLine(normalized) || "Cotización" }));
+    wrap.appendChild(el("div", { class: "meta", text: "Cotizado a las " + fmtTime() }));
+
+    if (warnings.length) {
+      const box = el("div", { class: "warnings" });
+      for (const w of warnings) {
+        box.appendChild(el("div", { class: "warning", text: WARNING_LABEL[w] || w }));
+      }
+      wrap.appendChild(box);
+    }
+
+    // badges (computed in code)
+    const minPrice = ranked.length ? Math.min(...ranked.map(r => r.price_mxn)) : Infinity;
+    const minSpeed = ranked.length ? Math.min(...ranked.map(r => r.speed_rank)) : Infinity;
+
+    const table = el("table", { class: "rates" });
+    const thead = el("tr", {},
+      el("th", { text: "Paquetería" }),
+      el("th", { text: "Servicio" }),
+      el("th", { text: "Total" }),
+      el("th", { text: "IVA" }),
+      el("th", { text: "Entrega" }),
+    );
+    table.appendChild(el("thead", {}, thead));
+
+    const tbody = el("tbody");
+    const carriersByName = new Map(carriers.map(c => [String(c.carrier || "").toLowerCase(), c]));
+
+    // 1) Ranked ok rates in ranking order.
+    const okCarriers = new Set();
+    for (const r of ranked) {
+      const cName = (r.carrier || "").toLowerCase();
+      okCarriers.add(cName);
+      const c = carriersByName.get(cName);
+      const badges = [];
+      if (r.price_mxn === minPrice) badges.push(el("span", { class: "badge cheap", text: "Más barato" }));
+      if (r.speed_rank === minSpeed) badges.push(el("span", { class: "badge fast", text: "Más rápido" }));
+      if (r.next_day) badges.push(el("span", { class: "badge next", text: "Llega mañana" }));
+      if (c && c.doubtful) badges.push(el("span", { class: "badge check", text: "verificar" }));
+
+      const svcCell = el("td", {});
+      svcCell.appendChild(document.createTextNode(r.service));
+      if (badges.length) {
+        svcCell.appendChild(document.createElement("br"));
+        for (const b of badges) svcCell.appendChild(b);
+      }
+
+      const entrega = r.next_day ? "Día siguiente" : (r.speed_rank ? "Servicio " + r.speed_rank : "");
+
+      const tr = el("tr", {},
+        el("td", { text: carrierLabel(r.carrier) }),
+        svcCell,
+        el("td", { class: "price", text: fmtMoney(r.price_mxn) }),
+        el("td", { text: ivaLabel(r.iva) }),
+        el("td", { text: entrega }),
+      );
+      makeRowClickable(tr, c ? evidenceHref(c.evidence) : null);
+      tbody.appendChild(tr);
+    }
+
+    // 2) Carrier rows that didn't produce ok rates — one per carrier with its status.
+    for (const c of carriers) {
+      const cName = String(c.carrier || "").toLowerCase();
+      if (okCarriers.has(cName)) continue;
+      if (c.status === "ok") continue;
+
+      const pill = el("span", { class: "pill " + c.status, text: c.status });
+      const msg = describeFailure(c);
+      const txt = document.createElement("span");
+      txt.textContent = " " + msg;
+
+      const td = el("td", { colspan: "4" });
+      td.appendChild(pill);
+      td.appendChild(txt);
+      const manual = CARRIER_PUBLIC_URL[cName];
+      if (manual) {
+        td.appendChild(document.createTextNode(" "));
+        const link = el("a", { href: manual, target: "_blank", rel: "noopener", text: "cotizar manualmente" });
+        link.addEventListener("click", (e) => e.stopPropagation());
+        td.appendChild(link);
+      }
+
+      const tr = el("tr", { class: "status-row" },
+        el("td", { text: carrierLabel(c.carrier) }),
+        td,
+      );
+      makeRowClickable(tr, evidenceHref(c.evidence));
+      tbody.appendChild(tr);
+    }
+
+    // Empty state: nothing to show at all.
+    if (!tbody.childNodes.length) {
+      tbody.appendChild(el("tr", {}, el("td", { colspan: "5", text: "Sin resultados para esta ruta." })));
+    }
+
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+
+    // Multi-parcel breakdown line.
+    const parcels = (normalized && normalized.parcels) || [];
+    const totalQty = parcels.reduce((n, p) => n + (p.quantity || 1), 0);
+    if (ranked.length && totalQty > 1) {
+      const top = ranked[0];
+      const perUnit = top.price_mxn / totalQty;
+      const line = `${totalQty} × ${fmtMoney(perUnit)} = ${fmtMoney(top.price_mxn)} (${carrierLabel(top.carrier)} ${top.service})`;
+      wrap.appendChild(el("div", { class: "per-parcel", text: line }));
+    }
+
+    return wrap;
+  }
+
+  function describeFailure(c) {
+    const name = carrierLabel(c.carrier);
+    if (c.status === "blocked") return `${name} bloqueó la consulta automática.`;
+    if (c.status === "timeout") return `${name} no respondió en 45 s.`;
+    if (c.status === "no_service") return "Sin cobertura para esta ruta.";
+    if (c.status === "invalid_input") return c.error ? c.error : "El sitio rechazó los datos.";
+    if (c.status === "error") return "No se pudo cotizar" + (c.error ? `: ${c.error}` : ".");
+    return c.status;
+  }
+
+  async function send(text) {
+    if (!text.trim()) return;
+    addUser(text);
     input.value = "";
-    add("bot", "Cargando...");
-    var res = await fetch("/api/chat", {
-      method: "POST",
-      body: JSON.stringify({ conversationId: conversationId, message: text })
-    });
-    var data = await res.json();
-    chat.removeChild(chat.lastChild);
-    add("bot", data.answer);
-  };
+    autoResize();
+    input.disabled = true; sendBtn.disabled = true;
+    const pending = addPending();
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ conversationId, message: text }),
+      });
+      if (!res.ok) {
+        let detail = "";
+        try { const j = await res.json(); detail = j.error || j.detail || ""; } catch {}
+        pending.remove();
+        addBot({ text: detail || "No pude conectar con el servidor, intenta de nuevo.", error: true });
+        return;
+      }
+      const data = await res.json();
+      pending.remove();
+      addBot({ text: data.answer || "", quote: data.quote });
+    } catch (e) {
+      pending.remove();
+      addBot({ text: "No pude conectar con el servidor, intenta de nuevo.", error: true });
+    } finally {
+      input.disabled = false; sendBtn.disabled = false; input.focus();
+    }
+  }
+
+  function autoResize() {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 140) + "px";
+  }
+
+  input.addEventListener("input", autoResize);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    send(input.value);
+  });
+})();
 </script>
 </body>
 </html>
