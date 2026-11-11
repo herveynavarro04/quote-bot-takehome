@@ -35,6 +35,7 @@
   .badge.fast  { background: #e3f2fd; color: #0b5ea8; }
   .badge.next  { background: #fff3cd; color: #7a5a00; }
   .badge.check { background: #fdecea; color: var(--err); }
+  .web-discount { color: var(--muted); font-size: 11px; display: inline-block; margin-top: 3px; }
   .status-row td { color: var(--muted); font-style: italic; }
   .status-row .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 6px; text-transform: uppercase; letter-spacing: .03em; font-style: normal; }
   .pill.blocked { background: #fdecea; color: var(--err); }
@@ -251,8 +252,15 @@
         svcCell.appendChild(document.createElement("br"));
         for (const b of badges) svcCell.appendChild(b);
       }
+      if (r.web_discount_price_mxn != null && r.web_discount_price_mxn < r.price_mxn) {
+        svcCell.appendChild(document.createElement("br"));
+        svcCell.appendChild(el("span", {
+          class: "web-discount",
+          text: `${fmtMoney(r.web_discount_price_mxn)} si compras la guía en línea`,
+        }));
+      }
 
-      const entrega = r.next_day ? "Día siguiente" : (r.speed_rank ? "Servicio " + r.speed_rank : "");
+      const entrega = r.delivery_text || (r.next_day ? "Día siguiente" : (r.speed_rank ? "Servicio " + r.speed_rank : ""));
 
       const tr = el("tr", {},
         el("td", { text: carrierLabel(r.carrier) }),

@@ -3,6 +3,7 @@ import { QuoteShipmentInput, type QuoteShipmentInputT } from "./schema.js";
 import { CARRIER_CONFIGS, findMissing, normalizeInput } from "./normalize.js";
 import { rank } from "./rank.js";
 import { quoteEstafeta } from "../carriers/estafeta.js";
+import { quoteFedex } from "../carriers/fedex.js";
 
 export interface QuoteRunOptions {
   presetsResolver?: (city: string) => string | undefined; // hook for future preset CPs
@@ -11,6 +12,13 @@ export interface QuoteRunOptions {
 // Registry — add adapters here. "fastest" / order doesn't matter: they run in parallel.
 const ADAPTERS: Record<string, (input: NormalizedInput, parcel: NormalizedParcel) => Promise<CarrierResult>> = {
   estafeta: (input, parcel) => quoteEstafeta({
+    origin_cp: input.origin_cp!,
+    destination_cp: input.destination_cp!,
+    parcel,
+    type: input.type,
+    declared_value_mxn: input.declared_value_mxn,
+  }),
+  fedex: (input, parcel) => quoteFedex({
     origin_cp: input.origin_cp!,
     destination_cp: input.destination_cp!,
     parcel,

@@ -1,0 +1,36 @@
+{
+  "id": 10,
+  "message": "hola, cuánto sale enviar algo a Oaxaca?",
+  "model": "claude-opus-5-5",
+  "elapsed_ms": 5501,
+  "cost_usd": 0.012184,
+  "tokens": {
+    "input": 676,
+    "output": 474
+  },
+  "tool_calls": [],
+  "answer": "¡Hola! Te ayudo con gusto. El precio cambia mucho según algunos datos. ¿Me podrías decir lo siguiente?\n\n1. **¿Desde dónde lo envías?** (ciudad o código postal de origen y, si lo tienes, el código postal de destino en Oaxaca)\n2. **¿Qué vas a enviar?** (un sobre con documentos o un paquete)\n3. **¿Cuánto pesa y qué medidas tiene?** (aproximadas está bien)\n4. **¿Tienes alguna paquetería en mente?** (Correos de México, Estafeta, DHL, FedEx, Paquetexpress, etc.) Si no, puedo comparar varias.\n5. **¿Qué tan rápido necesitas que llegue?** (día siguiente o envío económico)\n\nCon esos datos busco las tarifas en los cotizadores de las paqueterías y te digo cuál conviene más.",
+  "checks": [
+    {
+      "name": "noUnbackedPrice",
+      "pass": true
+    },
+    {
+      "name": "evidenceOk",
+      "pass": true
+    },
+    {
+      "name": "mustAsk",
+      "pass": true
+    },
+    {
+      "name": "noPrice",
+      "pass": true
+    },
+    {
+      "name": "noQuoteShipment",
+      "pass": true
+    }
+  ],
+  "pass": true
+}
