@@ -1,15 +1,18 @@
 {
-  "global": ["noUnbackedPrice", "evidenceOk"],
+  "global": ["noUnbackedPrice", "evidenceOk", "warningsMentioned"],
   "cases": {
     "1":  { "checks": ["mustQuote"] },
-    "2":  { "checks": ["mustAsk", "noPrice", "noQuoteShipment"] },
+    "2":  { "checks": ["mustAsk", "noPrice", "noCarrierContacted"],
+            "mustAskFor": ["postal"] },
     "3":  { "checks": ["mustQuote", "keepsUserUnits"] },
     "4":  { "checks": ["mustQuote", "cheapestPriority"] },
     "5":  { "checks": ["deadlineHandled"] },
-    "6":  { "checks": ["mustQuote", "namedCarrierStatuses"] },
+    "6":  { "checks": ["mustAsk", "noPrice", "noCarrierContacted"],
+            "mustAskFor": ["dimensions"] },
     "7":  { "checks": ["mustQuote", "fourParcels"] },
     "8":  { "checks": ["mustQuote", "insuranceOrWarning"] },
     "9":  { "checks": ["badPostalFlagged"] },
-    "10": { "checks": ["mustAsk", "noPrice", "noQuoteShipment"] }
+    "10": { "checks": ["mustAsk", "noPrice", "noCarrierContacted"],
+            "mustAskFor": ["origin", "postal", "weight", "dimensions"] }
   }
 }

@@ -31,6 +31,7 @@ function costUsd(trace: TraceEvent): number {
 
 type Case = { id: number; message: string; expect: string };
 type CheckResult = { name: string; pass: boolean; note?: string };
+type CaseConfig = { checks: string[]; mustAskFor?: string[] };
 
 const MONEY_RE = /(?:\$\s?[\d.,]+(?:\.\d+)?|\b\d[\d.,]*\s*(?:MXN|mxn|pesos?)\b)/g;
 
@@ -89,19 +90,90 @@ function checkNoPrice(answer: string): CheckResult {
   return { name: "noPrice", pass: amounts.length === 0, note: amounts.length ? `found: ${amounts.join(", ")}` : undefined };
 }
 
+// A model "asks" when it either uses a question mark or uses request-form language
+// (necesito, me falta, dime, por favor compárteme, could you share, please provide...).
+// A bulleted list of items the model needs still counts.
+const ASK_RE = /(\?|¿|necesit[oa]|me falt[ao]|falt[ao]n?|d[ií]me|comp[aá]rteme|comparte|prov[ií]deme|cu[eé]ntame|puedes (?:decirme|indicarme|compartir|mandarme)|please (?:share|provide|tell|send)|could you (?:share|provide|tell))/i;
+
 function checkMustAsk(answer: string): CheckResult {
-  const hasQuestion = /\?/.test(answer);
+  const asks = ASK_RE.test(answer);
   const hasPrice = extractAmounts(answer).length > 0;
-  return { name: "mustAsk", pass: hasQuestion && !hasPrice, note: !hasQuestion ? "no question mark" : hasPrice ? "contains price" : undefined };
+  return { name: "mustAsk", pass: asks && !hasPrice, note: !asks ? "answer doesn't ask for info" : hasPrice ? "contains price" : undefined };
 }
 
 function findQuoteCalls(trace: TraceEvent) {
   return trace.tools.filter((t) => t.name === "quote_shipment" || t.name === "get_price");
 }
 
+function parsedResults(trace: TraceEvent): any[] {
+  return findQuoteCalls(trace).map((c) => { try { return JSON.parse(c.result); } catch { return null; } }).filter(Boolean);
+}
+
+function latestResult(trace: TraceEvent): any | null {
+  const rs = parsedResults(trace);
+  return rs.length ? rs[rs.length - 1] : null;
+}
+
 function checkNoQuoteShipment(trace: TraceEvent): CheckResult {
   const calls = findQuoteCalls(trace);
   return { name: "noQuoteShipment", pass: calls.length === 0, note: calls.length ? `${calls.length} calls` : undefined };
+}
+
+// "No carrier was contacted": no quote call, OR every call returned needs_input,
+// OR no carrier entry has a browser-captured evidence path (no site actually hit).
+function checkNoCarrierContacted(trace: TraceEvent): CheckResult {
+  const results = parsedResults(trace);
+  if (results.length === 0) return { name: "noCarrierContacted", pass: true };
+  for (const r of results) {
+    if (r?.status === "needs_input") continue;
+    const carriers: any[] = Array.isArray(r?.carriers) ? r.carriers : [];
+    const anyHit = carriers.some((c) => c?.evidence?.screenshot && typeof c.evidence.screenshot === "string" && c.evidence.screenshot.length > 0);
+    if (anyHit) return { name: "noCarrierContacted", pass: false, note: "evidence captured — a carrier site was opened" };
+  }
+  return { name: "noCarrierContacted", pass: true };
+}
+
+const ASK_FOR_KEYWORDS: Record<string, RegExp> = {
+  postal: /c[oó]digo postal|postal code|\bCP\b|\bC\.P\.?\b|zip/i,
+  origin: /origen|desde|origin\b|from\b/i,
+  weight: /peso|weight\b|\bkg\b|\blb\b|libras|kilogram/i,
+  dimensions: /medidas|dimens|largo|ancho|alto|high|width|length|tama[nñ]o|caja.*(cm|in|pulg)|dimensions|size\b/i,
+};
+
+function checkMustAskFor(answer: string, items: string[]): CheckResult {
+  const missing: string[] = [];
+  for (const it of items) {
+    const re = ASK_FOR_KEYWORDS[it];
+    if (!re) { missing.push(`${it}(no-pattern)`); continue; }
+    if (!re.test(answer)) missing.push(it);
+  }
+  return { name: "mustAskFor", pass: missing.length === 0, note: missing.length ? `missing: ${missing.join(",")}` : undefined };
+}
+
+// For each warning in the latest quote result, require the answer to mention it
+// (in Spanish or English). If there are no warnings, pass trivially.
+const WARNING_HINTS: Record<string, RegExp> = {
+  price_is_approximate: /aproximad|approx/i,
+  insurance_not_provided: /seguro|insurance|cobertura/i,
+  suspicious_postal_code: /sospech|suspic|dudos|parece incorrect|no (es|parece) v[aá]lid|invalid postal/i,
+  weight_mismatch: /peso.*(difer|diferen|mismatch|no coincide)|diferen.*peso|weight (?:mismatch|differs)/i,
+  no_service_meets_deadline: /no (hay|existe|cumpl).*(plazo|d[ií]a|deadline|mañana|next[- ]day)|ningun.*servicio.*(plazo|d[ií]a)/i,
+  iva_unspecified: /iva (no )?(?:especific|indicad|se indica|informad)/i,
+  carrier_not_quoted: /no (se )?(?:pudo )?cotiz|no quot|not quoted|no (?:devolvi[oó]|contest[oó]|respondi[oó])/i,
+};
+
+function checkWarningsMentioned(answer: string, trace: TraceEvent): CheckResult {
+  const r = latestResult(trace);
+  if (!r) return { name: "warningsMentioned", pass: true };
+  const warnings: string[] = Array.isArray(r?.warnings) ? r.warnings : [];
+  if (warnings.length === 0) return { name: "warningsMentioned", pass: true };
+  const missing: string[] = [];
+  for (const w of warnings) {
+    const re = WARNING_HINTS[w];
+    if (!re) { missing.push(`${w}(no-pattern)`); continue; }
+    if (!re.test(answer)) missing.push(w);
+  }
+  return { name: "warningsMentioned", pass: missing.length === 0, note: missing.length ? `missing: ${missing.join(",")}` : undefined };
 }
 
 function checkKeepsUserUnits(trace: TraceEvent): CheckResult {
@@ -114,16 +186,17 @@ function checkKeepsUserUnits(trace: TraceEvent): CheckResult {
 function checkCheapestPriority(trace: TraceEvent): CheckResult {
   const calls = findQuoteCalls(trace);
   if (calls.length === 0) return { name: "cheapestPriority", pass: false, note: "no quote_shipment call" };
-  const hasPriority = calls.some((c) => /\bcheapest\b/i.test(JSON.stringify(c.input)));
+  const hasPriority = calls.some((c) => /"priority"\s*:\s*"cheapest"/.test(JSON.stringify(c.input)));
   if (!hasPriority) return { name: "cheapestPriority", pass: false, note: "priority != cheapest" };
-  const results = calls.flatMap((c) => {
-    try { const j = JSON.parse(c.result); return Array.isArray(j?.results) ? j.results : []; } catch { return []; }
+  const ranked = calls.flatMap((c) => {
+    try { const j = JSON.parse(c.result); return Array.isArray(j?.ranked) ? j.ranked : []; } catch { return []; }
   });
-  const okResults = results.filter((r: any) => r?.status === "ok" && typeof r?.price === "number");
-  if (okResults.length === 0) return { name: "cheapestPriority", pass: false, note: "no ok results to rank" };
-  const min = Math.min(...okResults.map((r: any) => r.price));
-  const first = okResults[0];
-  return { name: "cheapestPriority", pass: first.price === min, note: first.price === min ? undefined : `first=${first.price} min=${min}` };
+  if (ranked.length === 0) return { name: "cheapestPriority", pass: false, note: "no ranked rates" };
+  const prices = ranked.map((r: any) => r.price_mxn).filter((n: any) => typeof n === "number");
+  if (prices.length === 0) return { name: "cheapestPriority", pass: false, note: "no prices in ranked" };
+  const min = Math.min(...prices);
+  const first = ranked[0];
+  return { name: "cheapestPriority", pass: first.price_mxn === min, note: first.price_mxn === min ? undefined : `first=${first.price_mxn} min=${min}` };
 }
 
 function checkDeadlineHandled(answer: string, trace: TraceEvent): CheckResult {
@@ -138,17 +211,17 @@ function checkDeadlineHandled(answer: string, trace: TraceEvent): CheckResult {
 function checkNamedCarrierStatuses(trace: TraceEvent): CheckResult {
   const calls = findQuoteCalls(trace);
   if (calls.length === 0) return { name: "namedCarrierStatuses", pass: false, note: "no quote_shipment call" };
-  const results = calls.flatMap((c) => {
-    try { const j = JSON.parse(c.result); return Array.isArray(j?.results) ? j.results : []; } catch { return []; }
+  const carriers = calls.flatMap((c) => {
+    try { const j = JSON.parse(c.result); return Array.isArray(j?.carriers) ? j.carriers : []; } catch { return []; }
   });
   const needed = ["estafeta", "dhl", "fedex"];
-  const valid = new Set(["ok", "blocked", "timeout", "no_service", "error"]);
+  const valid = new Set(["ok", "blocked", "timeout", "no_service", "invalid_input", "error"]);
   const missing: string[] = [];
   for (const name of needed) {
-    const r = results.find((x: any) => String(x?.carrier ?? "").toLowerCase().includes(name));
+    const r = carriers.find((x: any) => String(x?.carrier ?? "").toLowerCase().includes(name));
     if (!r) missing.push(name);
     else if (!valid.has(r.status)) missing.push(`${name}(bad-status)`);
-    else if (r.status !== "ok" && r.price != null) missing.push(`${name}(priced-but-${r.status})`);
+    else if (r.status !== "ok" && Array.isArray(r.rates) && r.rates.length > 0) missing.push(`${name}(priced-but-${r.status})`);
   }
   return { name: "namedCarrierStatuses", pass: missing.length === 0, note: missing.length ? missing.join(",") : undefined };
 }
@@ -156,63 +229,87 @@ function checkNamedCarrierStatuses(trace: TraceEvent): CheckResult {
 function checkFourParcels(trace: TraceEvent): CheckResult {
   const calls = findQuoteCalls(trace);
   if (calls.length === 0) return { name: "fourParcels", pass: false, note: "no quote_shipment call" };
+  const matches = (p: any) => Number(p?.weight) === 10 && Number(p?.length) === 40 && Number(p?.width) === 30 && Number(p?.height) === 30;
   const ok = calls.some((c) => {
     const input: any = c.input ?? {};
     const parcels = input.parcels;
-    if (!Array.isArray(parcels) || parcels.length !== 4) return false;
-    return parcels.every((p: any) => Number(p.weight_kg ?? p.weight) === 10 &&
-      Number(p.length_cm ?? p.length) === 40 && Number(p.width_cm ?? p.width) === 30 && Number(p.height_cm ?? p.height) === 30);
+    if (!Array.isArray(parcels) || parcels.length < 1) return false;
+    const totalQty = parcels.reduce((n: number, p: any) => n + Number(p?.quantity ?? 1), 0);
+    if (totalQty !== 4) return false;
+    return parcels.every(matches);
   });
-  return { name: "fourParcels", pass: ok, note: ok ? undefined : "parcels != 4x(10kg,40x30x30)" };
+  return { name: "fourParcels", pass: ok, note: ok ? undefined : "did not describe 4x(10kg,40x30x30) parcels (via quantity or separate entries)" };
 }
 
 function checkInsuranceOrWarning(trace: TraceEvent): CheckResult {
   const calls = findQuoteCalls(trace);
   if (calls.length === 0) return { name: "insuranceOrWarning", pass: false, note: "no quote_shipment call" };
-  const hasDeclared = calls.some((c) => /"(declared_value|declaredValue|insured_value)"\s*:\s*25000/.test(JSON.stringify(c.input)));
-  if (!hasDeclared) return { name: "insuranceOrWarning", pass: false, note: "declared_value != 25000" };
-  const results = calls.flatMap((c) => {
-    try { const j = JSON.parse(c.result); return Array.isArray(j?.results) ? j.results : []; } catch { return []; }
+  const hasDeclared = calls.some((c) => /"declared_value_mxn"\s*:\s*25000/.test(JSON.stringify(c.input)));
+  if (!hasDeclared) return { name: "insuranceOrWarning", pass: false, note: "declared_value_mxn != 25000" };
+  const rateHits = calls.some((c) => {
+    try {
+      const j = JSON.parse(c.result);
+      const carriers = Array.isArray(j?.carriers) ? j.carriers : [];
+      return carriers.some((cc: any) => cc?.rates?.some((r: any) => r?.breakdown && /seguro|insurance/i.test(JSON.stringify(r.breakdown))));
+    } catch { return false; }
   });
-  const hasInsurance = results.some((r: any) => r?.insurance_cost != null || /insurance/i.test(JSON.stringify(r?.warnings ?? "")));
-  const hasWarning = results.some((r: any) => /insurance not provided/i.test(JSON.stringify(r?.warnings ?? "")));
-  return { name: "insuranceOrWarning", pass: hasInsurance || hasWarning, note: (hasInsurance || hasWarning) ? undefined : "no insurance cost or warning" };
+  const warnHits = calls.some((c) => {
+    try {
+      const j = JSON.parse(c.result);
+      const warns: string[] = Array.isArray(j?.warnings) ? j.warnings : [];
+      return warns.includes("insurance_not_provided");
+    } catch { return false; }
+  });
+  return { name: "insuranceOrWarning", pass: rateHits || warnHits, note: (rateHits || warnHits) ? undefined : "no insurance cost or warning" };
 }
 
 function checkBadPostalFlagged(answer: string, trace: TraceEvent): CheckResult {
   const calls = findQuoteCalls(trace);
-  const results = calls.flatMap((c) => {
-    try { const j = JSON.parse(c.result); return Array.isArray(j?.results) ? j.results : []; } catch { return []; }
+  const signals = calls.some((c) => {
+    try {
+      const j = JSON.parse(c.result);
+      const warns: string[] = Array.isArray(j?.warnings) ? j.warnings : [];
+      if (warns.includes("suspicious_postal_code")) return true;
+      const carriers = Array.isArray(j?.carriers) ? j.carriers : [];
+      return carriers.some((cc: any) => cc?.status === "invalid_input" || /postal|cp|código/i.test(cc?.error ?? ""));
+    } catch { return false; }
   });
-  const rejected = results.some((r: any) => /(invalid|reject|unknown).*(postal|cp)|suspicious/i.test(JSON.stringify(r)));
   const answerFlags = /(99999|código postal|postal code|dudoso|suspicious|inválido|invalid)/i.test(answer) && extractAmounts(answer).length === 0;
-  return { name: "badPostalFlagged", pass: rejected || answerFlags, note: (rejected || answerFlags) ? undefined : "no rejection or warning" };
+  return { name: "badPostalFlagged", pass: signals || answerFlags, note: (signals || answerFlags) ? undefined : "no rejection or warning" };
 }
 
 function checkEvidenceOk(trace: TraceEvent): CheckResult {
   const calls = findQuoteCalls(trace);
   if (calls.length === 0) return { name: "evidenceOk", pass: true };
-  const results = calls.flatMap((c) => {
-    try { const j = JSON.parse(c.result); return Array.isArray(j?.results) ? j.results : []; } catch { return []; }
+  const carriers = calls.flatMap((c) => {
+    try { const j = JSON.parse(c.result); return Array.isArray(j?.carriers) ? j.carriers : []; } catch { return []; }
   });
-  const okResults = results.filter((r: any) => r?.status === "ok");
-  if (okResults.length === 0) return { name: "evidenceOk", pass: true };
-  const missing = okResults.filter((r: any) => {
-    const hasUrl = typeof r?.url === "string" && r.url.length > 0;
-    const hasEvidence = r?.screenshot || r?.raw_text || r?.raw_json || r?.evidence;
+  const okCarriers = carriers.filter((r: any) => r?.status === "ok");
+  if (okCarriers.length === 0) return { name: "evidenceOk", pass: true };
+  const missing = okCarriers.filter((r: any) => {
+    const ev = r?.evidence ?? {};
+    const hasUrl = typeof ev.url === "string" && ev.url.length > 0;
+    const hasEvidence = ev.screenshot || ev.raw_html_path;
     return !(hasUrl && hasEvidence);
   });
   return { name: "evidenceOk", pass: missing.length === 0, note: missing.length ? `${missing.length} ok without evidence` : undefined };
 }
 
 // Dispatcher per check name
-function runCheck(name: string, c: Case, answer: string, trace: TraceEvent): CheckResult {
+function runCheck(name: string, c: Case, cfg: CaseConfig, answer: string, trace: TraceEvent): CheckResult {
   switch (name) {
     case "noUnbackedPrice": return checkNoUnbackedPrice(answer, trace);
     case "mustQuote": return checkMustQuote(answer, trace);
     case "noPrice": return checkNoPrice(answer);
-    case "mustAsk": return checkMustAsk(answer);
+    case "mustAsk": {
+      const base = checkMustAsk(answer);
+      if (!base.pass || !cfg.mustAskFor?.length) return base;
+      // When mustAskFor is set, additionally require the specific items to appear.
+      const extra = checkMustAskFor(answer, cfg.mustAskFor);
+      return { name: "mustAsk", pass: extra.pass, note: extra.note };
+    }
     case "noQuoteShipment": return checkNoQuoteShipment(trace);
+    case "noCarrierContacted": return checkNoCarrierContacted(trace);
     case "keepsUserUnits": return checkKeepsUserUnits(trace);
     case "cheapestPriority": return checkCheapestPriority(trace);
     case "deadlineHandled": return checkDeadlineHandled(answer, trace);
@@ -221,6 +318,7 @@ function runCheck(name: string, c: Case, answer: string, trace: TraceEvent): Che
     case "insuranceOrWarning": return checkInsuranceOrWarning(trace);
     case "badPostalFlagged": return checkBadPostalFlagged(answer, trace);
     case "evidenceOk": return checkEvidenceOk(trace);
+    case "warningsMentioned": return checkWarningsMentioned(answer, trace);
     default: return { name, pass: false, note: "unknown check" };
   }
 }
@@ -228,11 +326,11 @@ function runCheck(name: string, c: Case, answer: string, trace: TraceEvent): Che
 function carrierStatusSummary(trace: TraceEvent): string {
   const calls = findQuoteCalls(trace);
   if (!calls.length) return "-";
-  const results = calls.flatMap((c) => {
-    try { const j = JSON.parse(c.result); return Array.isArray(j?.results) ? j.results : []; } catch { return []; }
+  const carriers = calls.flatMap((c) => {
+    try { const j = JSON.parse(c.result); return Array.isArray(j?.carriers) ? j.carriers : []; } catch { return []; }
   });
-  if (!results.length) return "-";
-  return results.map((r: any) => `${r.carrier ?? "?"}:${r.status ?? "?"}`).join(" ");
+  if (!carriers.length) return "-";
+  return carriers.map((r: any) => `${r.carrier ?? "?"}:${r.status ?? "?"}`).join(" ");
 }
 
 function withTimeout<T>(p: Promise<T>, ms: number, onTimeout: () => void): Promise<T> {
@@ -290,9 +388,10 @@ async function main() {
     const elapsedMs = Date.now() - started;
     const cost = costUsd(trace);
 
-    const perCaseChecks: string[] = checksCfg.cases?.[String(c.id)]?.checks ?? [];
+    const caseCfg: CaseConfig = checksCfg.cases?.[String(c.id)] ?? { checks: [] };
+    const perCaseChecks: string[] = caseCfg.checks ?? [];
     const toRun = [...globalChecks, ...perCaseChecks];
-    const results: CheckResult[] = toRun.map((name) => runCheck(name, c, answer, trace));
+    const results: CheckResult[] = toRun.map((name) => runCheck(name, c, caseCfg, answer, trace));
     if (timedOut || error) results.push({ name: "runCompleted", pass: false, note: timedOut ? "timeout" : error });
 
     const failed = results.filter((r) => !r.pass);
