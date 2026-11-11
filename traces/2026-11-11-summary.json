@@ -1,178 +1,23 @@
 {
   "totals": {
     "model": "claude-sonnet-5-5",
-    "ran": 5,
-    "passed": 5,
+    "ran": 1,
+    "passed": 1,
     "pass_rate": 1,
-    "avg_time_ms": 16752,
-    "total_cost_usd": 0.055198,
+    "avg_time_ms": 27020,
+    "total_cost_usd": 0.014698,
     "unbacked_price_cases": 0
   },
   "cases": [
     {
-      "id": 1,
-      "message": "Cuánto cuesta mandar una caja de 2 kg de 64000 a 06600? mide 30x20x15 cm",
-      "model": "claude-sonnet-5-5",
-      "elapsed_ms": 25495,
-      "cost_usd": 0.012412,
-      "tokens": {
-        "input": 4236,
-        "output": 394
-      },
-      "tool_calls": [
-        {
-          "name": "quote_shipment",
-          "input": {
-            "type": "package",
-            "origin_cp": "64000",
-            "destination_cp": "06600",
-            "parcels": [
-              {
-                "weight": 2,
-                "weight_unit": "kg",
-                "length": 30,
-                "width": 20,
-                "height": 15,
-                "dim_unit": "cm",
-                "quantity": 1
-              }
-            ]
-          },
-          "result": "{\"status\":\"ok\",\"normalized\":{\"origin_cp\":\"64000\",\"destination_cp\":\"06600\",\"parcels\":[{\"real_kg\":2,\"length_cm\":30,\"width_cm\":20,\"height_cm\":15,\"volumetric_kg\":1.8,\"billable_kg\":2,\"quantity\":1}],\"type\":\"package\",\"priority\":\"cheapest\",\"warnings\":[]},\"carriers\":[{\"carrier\":\"estafeta\",\"status\":\"ok\",\"rates\":[{\"service\":\"12:30\",\"price_mxn\":585.89,\"iva\":\"included\",\"speed_rank\":1,\"next_day\":true},{\"service\":\"Dia Sig.\",\"price_mxn\":499.42,\"iva\":\"included\",\"speed_rank\":2,\"next_day\":true},{\"service\":\"2 Dias\",\"price_mxn\":467.52,\"iva\":\"included\",\"speed_rank\":3,\"next_day\":false},{\"service\":\"Terrestre\",\"price_mxn\":428.29,\"iva\":\"included\",\"speed_rank\":4,\"next_day\":false}],\"method\":\"network\",\"warnings\":[\"price_is_approximate\"],\"site_echo\":{\"origin\":\"64000 \",\"destination\":\"CP 06600 \",\"billed_weight_kg\":2},\"evidence\":{\"url\":\"https://cotizadorsitecorecms.azurewebsites.net/Cotizador/\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-34-51-465Z-estafeta.png\",\"captured_at\":\"2026-11-11T22:34:51.466Z\"},\"ms\":2561},{\"carrier\":\"fedex\",\"status\":\"blocked\",\"rates\":[],\"error\":\"akamai block page (incident id present)\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.fedex.com/es-mx/online/rating.html\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-34-51-496Z-fedex.png\",\"captured_at\":\"2026-11-11T22:34:51.496Z\"},\"ms\":2199},{\"carrier\":\"dhl\",\"status\":\"blocked\",\"rates\":[],\"error\":\"DHL rechazó la conexión desde Chromium headless (page.goto: Timeout 20000ms exceeded.) — bloqueo a nivel de red por bot detection\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.dhl.com/mx-es/home/envio/cotizacion-envio.html\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-34-51-498Z-dhl.png\",\"captured_at\":\"2026-11-11T22:34:51.498Z\"},\"ms\":21409,\"debug\":{\"goto_first_error\":\"page.goto: Timeout 20000ms exceeded.\",\"evidence_strategy\":\"reset_existing_page\"}}],\"ranked\":[{\"carrier\":\"estafeta\",\"service\":\"Terrestre\",\"price_mxn\":428.29,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":4},{\"carrier\":\"estafeta\",\"service\":\"2 Dias\",\"price_mxn\":467.52,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":3},{\"carrier\":\"estafeta\",\"service\":\"Dia Sig.\",\"price_mxn\":499.42,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":2},{\"carrier\":\"estafeta\",\"service\":\"12:30\",\"price_mxn\":585.89,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":1}],\"warnings\":[\"price_is_approximate\"]}"
-        }
-      ],
-      "answer": "La opción más barata es Estafeta Terrestre, a **$428.29 MXN** con IVA incluido. Si necesitas que llegue más rápido, Estafeta Día Siguiente cuesta $499.42 MXN. El resultado no trae el tiempo de entrega del servicio Terrestre.\n\n- **Advertencia:** Estafeta marca el precio como aproximado, así que el cobro final puede variar.\n- **No se pudo cotizar:** FedEx y DHL. Los dos sitios bloquearon la consulta automática (status \"blocked\"). Si quieres compararlos, habría que cotizar directamente en sus páginas.",
-      "checks": [
-        {
-          "name": "noUnbackedPrice",
-          "pass": true
-        },
-        {
-          "name": "evidenceOk",
-          "pass": true
-        },
-        {
-          "name": "warningsMentioned",
-          "pass": true
-        },
-        {
-          "name": "mustQuote",
-          "pass": true
-        }
-      ],
-      "pass": true,
-      "carrier_statuses": "estafeta:ok fedex:blocked dhl:blocked"
-    },
-    {
-      "id": 3,
-      "message": "quote a 5 lb box, 12x10x8 inches, from Tijuana 22010 to Cancún 77500",
-      "model": "claude-sonnet-5-5",
-      "elapsed_ms": 25856,
-      "cost_usd": 0.014942,
-      "tokens": {
-        "input": 4226,
-        "output": 649
-      },
-      "tool_calls": [
-        {
-          "name": "quote_shipment",
-          "input": {
-            "type": "package",
-            "parcels": [
-              {
-                "weight": 5,
-                "weight_unit": "lb",
-                "length": 12,
-                "width": 10,
-                "height": 8,
-                "dim_unit": "in",
-                "quantity": 1
-              }
-            ],
-            "origin_cp": "22010",
-            "origin_city": "Tijuana",
-            "destination_cp": "77500",
-            "destination_city": "Cancún"
-          },
-          "result": "{\"status\":\"ok\",\"normalized\":{\"origin_cp\":\"22010\",\"origin_city\":\"Tijuana\",\"destination_cp\":\"77500\",\"destination_city\":\"Cancún\",\"parcels\":[{\"real_kg\":2.268,\"length_cm\":30.48,\"width_cm\":25.4,\"height_cm\":20.32,\"volumetric_kg\":3.146,\"billable_kg\":3.146,\"quantity\":1}],\"type\":\"package\",\"priority\":\"cheapest\",\"warnings\":[]},\"carriers\":[{\"carrier\":\"estafeta\",\"status\":\"ok\",\"rates\":[{\"service\":\"Dia Sig.\",\"price_mxn\":1170.27,\"iva\":\"included\",\"speed_rank\":2,\"next_day\":true},{\"service\":\"2 Dias\",\"price_mxn\":1168.1,\"iva\":\"included\",\"speed_rank\":3,\"next_day\":false},{\"service\":\"Terrestre\",\"price_mxn\":632.47,\"iva\":\"included\",\"speed_rank\":4,\"next_day\":false}],\"method\":\"network\",\"warnings\":[\"price_is_approximate\"],\"site_echo\":{\"origin\":\"22010 \",\"destination\":\"CP 77500 \",\"billed_weight_kg\":4},\"evidence\":{\"url\":\"https://cotizadorsitecorecms.azurewebsites.net/Cotizador/\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-35-16-845Z-estafeta.png\",\"captured_at\":\"2026-11-11T22:35:16.845Z\"},\"ms\":1324},{\"carrier\":\"fedex\",\"status\":\"blocked\",\"rates\":[],\"error\":\"akamai block page (incident id present)\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.fedex.com/es-mx/online/rating.html\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-35-16-846Z-fedex.png\",\"captured_at\":\"2026-11-11T22:35:16.846Z\"},\"ms\":732},{\"carrier\":\"dhl\",\"status\":\"blocked\",\"rates\":[],\"error\":\"DHL rechazó la conexión desde Chromium headless (page.goto: Timeout 20000ms exceeded.) — bloqueo a nivel de red por bot detection\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.dhl.com/mx-es/home/envio/cotizacion-envio.html\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-35-16-846Z-dhl.png\",\"captured_at\":\"2026-11-11T22:35:16.846Z\"},\"ms\":20286,\"debug\":{\"goto_first_error\":\"page.goto: Timeout 20000ms exceeded.\",\"evidence_strategy\":\"reset_existing_page\"}}],\"ranked\":[{\"carrier\":\"estafeta\",\"service\":\"Terrestre\",\"price_mxn\":632.47,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":4},{\"carrier\":\"estafeta\",\"service\":\"2 Dias\",\"price_mxn\":1168.1,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":3},{\"carrier\":\"estafeta\",\"service\":\"Dia Sig.\",\"price_mxn\":1170.27,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":2}],\"warnings\":[\"price_is_approximate\"]}"
-        }
-      ],
-      "answer": "La opción más barata es Estafeta Terrestre, a $632.47 MXN con IVA incluido. Si necesitas que llegue más rápido, Estafeta 2 Días cuesta $1,168.10 y Día Siguiente cuesta $1,170.27. No hay datos de tiempos de entrega más allá de estos nombres de servicio.\n\n- **Precio aproximado:** Estafeta marca que los precios son aproximados.\n- **Peso facturado:** el sitio de Estafeta cotizó con 4 kg facturables. Nuestro cálculo da 3.146 kg, así que el precio final podría variar un poco.\n- **No se pudo cotizar:** FedEx y DHL. Ambos sitios bloquearon la consulta automática (bloqueo anti-bots).\n\nSolo cotizo y no puedo contratar el envío.",
-      "checks": [
-        {
-          "name": "noUnbackedPrice",
-          "pass": true
-        },
-        {
-          "name": "evidenceOk",
-          "pass": true
-        },
-        {
-          "name": "warningsMentioned",
-          "pass": true
-        },
-        {
-          "name": "mustQuote",
-          "pass": true
-        },
-        {
-          "name": "keepsUserUnits",
-          "pass": true
-        }
-      ],
-      "pass": true,
-      "carrier_statuses": "estafeta:ok fedex:blocked dhl:blocked"
-    },
-    {
-      "id": 6,
-      "message": "Envío de 3 kg de 44100 a 97000, compárame Estafeta, DHL y FedEx por favor",
-      "model": "claude-sonnet-5-5",
-      "elapsed_ms": 2749,
-      "cost_usd": 0.005576,
-      "tokens": {
-        "input": 1453,
-        "output": 267
-      },
-      "tool_calls": [],
-      "answer": "Para cotizar necesito las medidas de la caja (largo, ancho y alto) y si están en cm o en pulgadas. También dime si es un paquete o un sobre. Si es un paquete, ¿cuántas cajas son? Con eso comparo Estafeta, DHL y FedEx de 44100 a 97000.",
-      "checks": [
-        {
-          "name": "noUnbackedPrice",
-          "pass": true
-        },
-        {
-          "name": "evidenceOk",
-          "pass": true
-        },
-        {
-          "name": "warningsMentioned",
-          "pass": true
-        },
-        {
-          "name": "mustAsk",
-          "pass": true
-        },
-        {
-          "name": "noPrice",
-          "pass": true
-        },
-        {
-          "name": "noCarrierContacted",
-          "pass": true
-        }
-      ],
-      "pass": true,
-      "carrier_statuses": "-"
-    },
-    {
       "id": 7,
       "message": "Cuánto me cobran por 40 kg de 64000 a 22000? son 4 cajas iguales de 10 kg, 40x30x30 cada una",
       "model": "claude-sonnet-5-5",
-      "elapsed_ms": 26395,
-      "cost_usd": 0.015536,
+      "elapsed_ms": 27020,
+      "cost_usd": 0.014698,
       "tokens": {
-        "input": 4263,
-        "output": 701
+        "input": 4264,
+        "output": 617
       },
       "tool_calls": [
         {
@@ -193,10 +38,10 @@
               }
             ]
           },
-          "result": "{\"status\":\"ok\",\"normalized\":{\"origin_cp\":\"64000\",\"destination_cp\":\"22000\",\"parcels\":[{\"real_kg\":10,\"length_cm\":40,\"width_cm\":30,\"height_cm\":30,\"volumetric_kg\":7.2,\"billable_kg\":10,\"quantity\":4}],\"type\":\"package\",\"priority\":\"cheapest\",\"warnings\":[]},\"carriers\":[{\"carrier\":\"estafeta\",\"status\":\"ok\",\"rates\":[{\"service\":\"12:30\",\"price_mxn\":37590.08,\"iva\":\"included\",\"speed_rank\":1,\"next_day\":true},{\"service\":\"Dia Sig.\",\"price_mxn\":35892.48,\"iva\":\"included\",\"speed_rank\":2,\"next_day\":true},{\"service\":\"2 Dias\",\"price_mxn\":36903.04,\"iva\":\"included\",\"speed_rank\":3,\"next_day\":false},{\"service\":\"Terrestre\",\"price_mxn\":12461.92,\"iva\":\"included\",\"speed_rank\":4,\"next_day\":false}],\"method\":\"network\",\"warnings\":[\"price_is_approximate\"],\"site_echo\":{\"origin\":\"64000 \",\"destination\":\"CP 22000 \",\"billed_weight_kg\":10},\"evidence\":{\"url\":\"https://cotizadorsitecorecms.azurewebsites.net/Cotizador/\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-35-45-201Z-estafeta.png\",\"captured_at\":\"2026-11-11T22:35:45.201Z\"},\"ms\":1621},{\"carrier\":\"fedex\",\"status\":\"blocked\",\"rates\":[],\"error\":\"akamai block page (incident id present)\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.fedex.com/es-mx/online/rating.html\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-35-45-202Z-fedex.png\",\"captured_at\":\"2026-11-11T22:35:45.202Z\"},\"ms\":933},{\"carrier\":\"dhl\",\"status\":\"blocked\",\"rates\":[],\"error\":\"DHL rechazó la conexión desde Chromium headless (page.goto: Timeout 20000ms exceeded.) — bloqueo a nivel de red por bot detection\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.dhl.com/mx-es/home/envio/cotizacion-envio.html\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-35-45-203Z-dhl.png\",\"captured_at\":\"2026-11-11T22:35:45.205Z\"},\"ms\":20579,\"debug\":{\"goto_first_error\":\"page.goto: Timeout 20000ms exceeded.\",\"evidence_strategy\":\"reset_existing_page\"}}],\"ranked\":[{\"carrier\":\"estafeta\",\"service\":\"Terrestre\",\"price_mxn\":12461.92,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":4},{\"carrier\":\"estafeta\",\"service\":\"Dia Sig.\",\"price_mxn\":35892.48,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":2},{\"carrier\":\"estafeta\",\"service\":\"2 Dias\",\"price_mxn\":36903.04,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":3},{\"carrier\":\"estafeta\",\"service\":\"12:30\",\"price_mxn\":37590.08,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":1}],\"warnings\":[\"price_is_approximate\"]}"
+          "result": "{\"status\":\"ok\",\"normalized\":{\"origin_cp\":\"64000\",\"destination_cp\":\"22000\",\"parcels\":[{\"real_kg\":10,\"length_cm\":40,\"width_cm\":30,\"height_cm\":30,\"volumetric_kg\":7.2,\"billable_kg\":10,\"quantity\":4}],\"type\":\"package\",\"priority\":\"cheapest\",\"warnings\":[]},\"carriers\":[{\"carrier\":\"estafeta\",\"status\":\"ok\",\"rates\":[{\"service\":\"12:30\",\"price_mxn\":9397.52,\"iva\":\"included\",\"speed_rank\":1,\"next_day\":true},{\"service\":\"Dia Sig.\",\"price_mxn\":8973.12,\"iva\":\"included\",\"speed_rank\":2,\"next_day\":true},{\"service\":\"2 Dias\",\"price_mxn\":9225.76,\"iva\":\"included\",\"speed_rank\":3,\"next_day\":false},{\"service\":\"Terrestre\",\"price_mxn\":3115.48,\"iva\":\"included\",\"speed_rank\":4,\"next_day\":false}],\"method\":\"network\",\"warnings\":[\"price_is_approximate\"],\"site_echo\":{\"origin\":\"64000 \",\"destination\":\"CP 22000 \",\"billed_weight_kg\":10},\"evidence\":{\"url\":\"https://cotizadorsitecorecms.azurewebsites.net/Cotizador/\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T23-48-10-916Z-estafeta.png\",\"captured_at\":\"2026-11-11T23:48:10.916Z\"},\"ms\":2387},{\"carrier\":\"fedex\",\"status\":\"blocked\",\"rates\":[],\"error\":\"akamai block page (incident id present)\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.fedex.com/es-mx/online/rating.html\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T23-48-10-931Z-fedex.png\",\"captured_at\":\"2026-11-11T23:48:10.931Z\"},\"ms\":1205},{\"carrier\":\"dhl\",\"status\":\"blocked\",\"rates\":[],\"error\":\"DHL rechazó la conexión desde Chromium headless (page.goto: Timeout 20000ms exceeded.) — bloqueo a nivel de red por bot detection\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.dhl.com/mx-es/home/envio/cotizacion-envio.html\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T23-48-10-932Z-dhl.png\",\"captured_at\":\"2026-11-11T23:48:10.932Z\"},\"ms\":20994,\"debug\":{\"goto_first_error\":\"page.goto: Timeout 20000ms exceeded.\",\"evidence_strategy\":\"reset_existing_page\"}}],\"ranked\":[{\"carrier\":\"estafeta\",\"service\":\"Terrestre\",\"price_mxn\":3115.48,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":4},{\"carrier\":\"estafeta\",\"service\":\"Dia Sig.\",\"price_mxn\":8973.12,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":2},{\"carrier\":\"estafeta\",\"service\":\"2 Dias\",\"price_mxn\":9225.76,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":3},{\"carrier\":\"estafeta\",\"service\":\"12:30\",\"price_mxn\":9397.52,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":1}],\"warnings\":[\"price_is_approximate\"]}"
         }
       ],
-      "answer": "Estafeta fue la única paquetería que cotizó. La opción más barata es **Estafeta Terrestre, $12,461.92 MXN con IVA incluido**. Es un precio aproximado.\n\nSi necesitas más rapidez, Estafeta Día Sig. cuesta $35,892.48 y la de 12:30 cuesta $37,590.08, las dos con IVA. Estafeta 2 Días cuesta $36,903.04.\n\n- **No se pudo cotizar:** FedEx y DHL fueron bloqueados por sus sitios, así que no tengo precios de ellas.\n- **Revisa el peso:** el sitio de Estafeta mostró 10 kg facturados y no 40 kg (4 cajas de 10 kg). Los montos son muy altos para este envío. Puede ser que no haya contado las 4 cajas, así que confírmalo antes de decidir.\n\nSolo cotizo, no genero la guía ni hago el pago.",
+      "answer": "La opción más barata es **Estafeta Terrestre, a $3,115.48 MXN con IVA incluido**. No hay un tiempo de entrega en el resultado. Las opciones más rápidas de Estafeta cuestan bastante más: Día Siguiente $8,973.12 y 12:30 $9,397.52.\n\n- **Precio aproximado:** el resultado marca los precios de Estafeta como aproximados. El precio final puede cambiar.\n- **Peso facturable:** el sitio de Estafeta mostró 10 kg de peso facturable, que es el peso de una caja. Conviene confirmar que el precio cubra las 4 cajas (40 kg en total).\n- **FedEx y DHL:** no se pudieron cotizar porque bloquearon la consulta automática (status \"blocked\"). Solo tengo precios de Estafeta.",
       "checks": [
         {
           "name": "noUnbackedPrice",
@@ -221,47 +66,6 @@
       ],
       "pass": true,
       "carrier_statuses": "estafeta:ok fedex:blocked dhl:blocked"
-    },
-    {
-      "id": 10,
-      "message": "hola, cuánto sale enviar algo a Oaxaca?",
-      "model": "claude-sonnet-5-5",
-      "elapsed_ms": 3265,
-      "cost_usd": 0.006732,
-      "tokens": {
-        "input": 1436,
-        "output": 386
-      },
-      "tool_calls": [],
-      "answer": "¡Hola! Para cotizar necesito estos datos:\n\n1. **Tipo de envío**: ¿paquete o sobre (documentos)?\n2. **Origen**: código postal o ciudad desde donde sale.\n3. **Destino**: código postal en Oaxaca. Si no lo tienes, dime la ciudad.\n4. **Peso** de cada paquete, en kg o lb.\n5. **Medidas de la caja** (largo, ancho y alto), en cm o pulgadas. Esto aplica solo a paquetes.\n6. **Cantidad de paquetes**, si son varios.\n\nTambién me sirven estos datos, pero son opcionales:\n- Valor declarado, si quieres asegurar el envío.\n- Si buscas lo más barato, lo más rápido o una fecha límite.\n- Si quieres cotizar con alguna paquetería en particular.",
-      "checks": [
-        {
-          "name": "noUnbackedPrice",
-          "pass": true
-        },
-        {
-          "name": "evidenceOk",
-          "pass": true
-        },
-        {
-          "name": "warningsMentioned",
-          "pass": true
-        },
-        {
-          "name": "mustAsk",
-          "pass": true
-        },
-        {
-          "name": "noPrice",
-          "pass": true
-        },
-        {
-          "name": "noCarrierContacted",
-          "pass": true
-        }
-      ],
-      "pass": true,
-      "carrier_statuses": "-"
     }
   ]
 }

@@ -117,17 +117,6 @@ export function parseEstafetaHtml(html: string): { rates: Rate[]; billedKg?: num
   return { rates, billedKg, origin, destination, ivaIncluded };
 }
 
-function multiplyRates(rates: Rate[], factor: number): Rate[] {
-  if (factor === 1) return rates;
-  return rates.map((r) => ({
-    ...r,
-    price_mxn: Number((r.price_mxn * factor).toFixed(2)),
-    breakdown: r.breakdown
-      ? Object.fromEntries(Object.entries(r.breakdown).map(([k, v]) => [k, Number((v * factor).toFixed(2))]))
-      : undefined,
-  }));
-}
-
 async function fillAndSubmit(page: Page, origin: string, destination: string, parcel: NormalizedParcel, type: "package" | "envelope") {
   await page.waitForLoadState("domcontentloaded");
   await page.locator("#zipCodeOri").waitFor({ state: "visible", timeout: 15_000 });
@@ -258,9 +247,10 @@ export async function quoteEstafeta(args: EstafetaArgs): Promise<CarrierResult> 
       ctx.addWarning("price_is_approximate");
       if (!ivaIncluded) ctx.addWarning("iva_unspecified");
 
-      // Multiply for quantity
-      const q = args.parcel.quantity;
-      const final = multiplyRates(chosen, q);
+      // Rates returned to the orchestrator are PER-PARCEL. aggregateForCarrier
+      // in quote/quote.ts multiplies by quantity exactly once; doing it here
+      // too would double-count (see case 7: 4 identical boxes came out as 16×).
+      const final = chosen;
 
       // Weight sanity: compare billed vs computed billable (±1 or ceiling)
       if (billedKg != null) {
