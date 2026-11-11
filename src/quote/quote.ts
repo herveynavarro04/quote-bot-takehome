@@ -4,6 +4,7 @@ import { CARRIER_CONFIGS, findMissing, normalizeInput } from "./normalize.js";
 import { rank } from "./rank.js";
 import { quoteEstafeta } from "../carriers/estafeta.js";
 import { quoteFedex } from "../carriers/fedex.js";
+import { quoteDhl } from "../carriers/dhl.js";
 
 export interface QuoteRunOptions {
   presetsResolver?: (city: string) => string | undefined; // hook for future preset CPs
@@ -19,6 +20,13 @@ const ADAPTERS: Record<string, (input: NormalizedInput, parcel: NormalizedParcel
     declared_value_mxn: input.declared_value_mxn,
   }),
   fedex: (input, parcel) => quoteFedex({
+    origin_cp: input.origin_cp!,
+    destination_cp: input.destination_cp!,
+    parcel,
+    type: input.type,
+    declared_value_mxn: input.declared_value_mxn,
+  }),
+  dhl: (input, parcel) => quoteDhl({
     origin_cp: input.origin_cp!,
     destination_cp: input.destination_cp!,
     parcel,
@@ -127,26 +135,51 @@ export async function quoteShipment(raw: unknown, _options: QuoteRunOptions = {}
     };
   }
 
-  // Pick carriers
-  const requested = input.carriers && input.carriers.length > 0
-    ? input.carriers.map((c) => c.toLowerCase())
-    : implementedCarriers();
+  // Pick carriers. QB_CARRIERS env var is a dev-only override: comma-separated
+  // list to restrict which adapters run. Useful for watching one carrier with
+  // HEADFUL=1 without the other browser windows in the way.
+  // Example: QB_CARRIERS=fedex HEADFUL=1 npm run eval -- 1
+  const envOverride = (process.env.QB_CARRIERS ?? "").trim();
+  const requested = envOverride
+    ? envOverride.split(",").map((c) => c.trim().toLowerCase()).filter(Boolean)
+    : (input.carriers && input.carriers.length > 0
+        ? input.carriers.map((c) => c.toLowerCase())
+        : implementedCarriers());
 
   // Use estafeta's divisor as the "display" divisor for normalization output.
   // Each adapter re-normalizes per its own carrier config inside its call if needed.
   const divisor = CARRIER_CONFIGS.estafeta.volumetric_divisor;
   const normalized = normalizeInput(input, divisor);
 
-  // Run carriers in parallel.
+  // Run carriers in parallel. Each adapter has its own internal timeout
+  // (45 s by default, 60 s for DHL). This outer hard bound is a safety net
+  // for adapter bugs — a wedged finally block or a never-resolving locator
+  // can't stall the whole quote past this.
+  const HARD_ADAPTER_BUDGET_MS = 90_000;
+  const hardTimeout = (name: string): Promise<CarrierResult> => new Promise((resolve) => {
+    setTimeout(() => resolve({
+      carrier: name,
+      status: "timeout",
+      rates: [],
+      error: `hard orchestrator timeout after ${HARD_ADAPTER_BUDGET_MS}ms (adapter did not resolve)`,
+      warnings: [],
+      evidence: { url: "", screenshot: "", captured_at: new Date().toISOString() },
+      ms: HARD_ADAPTER_BUDGET_MS,
+    }), HARD_ADAPTER_BUDGET_MS);
+  });
+
   const settled = await Promise.allSettled(requested.map(async (name) => {
     const adapter = ADAPTERS[name];
     if (!adapter) return notImplementedResult(name);
+
+    const started = Date.now();
+    console.error(`[quote] ${name} → starting`);
 
     // Quote per unique parcel type. Identical parcels (quantity > 1) → one call.
     const perParcel: CarrierResult[] = [];
     for (const parcel of normalized.parcels) {
       try {
-        const r = await adapter(normalized, parcel);
+        const r = await Promise.race([adapter(normalized, parcel), hardTimeout(name)]);
         perParcel.push(r);
       } catch (e: any) {
         perParcel.push({
@@ -160,6 +193,7 @@ export async function quoteShipment(raw: unknown, _options: QuoteRunOptions = {}
         });
       }
     }
+    console.error(`[quote] ${name} ← done in ${Date.now() - started}ms (status=${perParcel.map((p) => p.status).join(",")})`);
     return aggregateForCarrier(name, perParcel, normalized.parcels);
   }));
 

@@ -8,6 +8,10 @@ export const CARRIER_CONFIGS: Record<string, CarrierConfig> = {
   estafeta: { name: "estafeta", volumetric_divisor: 5000, max_weight_kg: 70, dim_min_cm: 1, dim_max_cm: 1000, max_decimals: 3 },
   // FedEx: dimDivisor 139 in³/lb == 5000 cm³/kg (verified against the rates page).
   fedex:    { name: "fedex",    volumetric_divisor: 5000, max_weight_kg: 68, dim_min_cm: 1, dim_max_cm: 302,  max_decimals: 2 },
+  // DHL Express: divisor NOT stated by the MX cotizador. Using the industry
+  // 5000 cm³/kg as a placeholder — the billed_weight check (CHARGEABLE_WEIGHT
+  // in the booking link) is what we actually trust. UNVERIFIED.
+  dhl:      { name: "dhl",      volumetric_divisor: 5000, max_weight_kg: 70, dim_min_cm: 1, dim_max_cm: 300,  max_decimals: 2 },
 };
 
 function round(n: number, decimals: number): number {

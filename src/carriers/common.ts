@@ -7,7 +7,14 @@ let sharedBrowser: Browser | null = null;
 
 export async function getBrowser(): Promise<Browser> {
   if (!sharedBrowser || !sharedBrowser.isConnected()) {
-    sharedBrowser = await chromium.launch({ headless: process.env.HEADFUL !== "1" });
+    sharedBrowser = await chromium.launch({
+      headless: process.env.HEADFUL !== "1",
+      // DHL's CDN closes the HTTP/2 stream on fresh Playwright sessions
+      // (ERR_HTTP2_PROTOCOL_ERROR every time). Negotiating HTTP/1.1 via ALPN
+      // sidesteps it. This is a protocol fallback, not stealth or fingerprint
+      // spoofing — HTTP/1.1 was the only transport until 2015.
+      args: ["--disable-http2"],
+    });
   }
   return sharedBrowser;
 }
@@ -88,6 +95,16 @@ export interface AdapterCtx {
   setStatus: (s: Status) => void;
   setError: (msg: string) => void;
   addWarning: (w: string) => void;
+  setDebug: (key: string, value: unknown) => void;
+  // Mid-flow block check — adapters can call this after sensitive steps
+  // (postal-code lookup, submit) to decide early. Returns the block reason
+  // observed so far, or null.
+  blockSeen: () => string | null;
+  // Tell runAdapter that the adapter already saved a screenshot at
+  // evidence.shot and the finally block should NOT overwrite it. Use when
+  // the live page is broken and finally's own screenshot would either leave
+  // a 0-byte file or capture an unrelated state.
+  markEvidenceSaved: () => void;
 }
 
 export interface AdapterSpec {
@@ -109,11 +126,27 @@ export async function runAdapter(spec: AdapterSpec): Promise<CarrierResult> {
   let rawHtmlPath: string | undefined;
   let siteEcho: CarrierResult["site_echo"] | undefined;
   const warnings: string[] = [];
+  const debug: Record<string, unknown> = {};
   let rates: CarrierResult["rates"] = [];
+  let evidenceSaved = false;
+
+  // Mid-flow block watcher. We listen to every response the page makes and
+  // flag the first 401/403/429. Adapters can poll via ctx.blockSeen() between
+  // steps; runAdapter also promotes a trailing-block result at the end.
+  let networkBlock: string | null = null;
+  const seenBlockedUrls: string[] = [];
 
   const browser = await getBrowser();
   const context = await browser.newContext({ locale: "es-MX" });
   const page = await context.newPage();
+
+  page.on("response", (resp) => {
+    const code = resp.status();
+    if ([401, 403, 429].includes(code)) {
+      if (!networkBlock) networkBlock = `HTTP ${code} on ${new URL(resp.url()).hostname}`;
+      if (seenBlockedUrls.length < 5) seenBlockedUrls.push(`${code} ${resp.url()}`);
+    }
+  });
 
   const timeoutMs = spec.timeoutMs ?? 45_000;
   const timeoutErr = new Error("adapter timeout");
@@ -131,6 +164,9 @@ export async function runAdapter(spec: AdapterSpec): Promise<CarrierResult> {
       setStatus: (s) => { status = s; },
       setError: (m) => { error = m; },
       addWarning: (w) => { if (!warnings.includes(w)) warnings.push(w); },
+      setDebug: (k, v) => { debug[k] = v; },
+      blockSeen: () => networkBlock,
+      markEvidenceSaved: () => { evidenceSaved = true; },
     };
     const result = await Promise.race([spec.run(ctx), timeoutP]);
     rates = result.rates;
@@ -144,8 +180,34 @@ export async function runAdapter(spec: AdapterSpec): Promise<CarrierResult> {
       error = e?.message ?? String(e);
     }
   } finally {
-    try { await page.screenshot({ path: paths.shot, fullPage: true }); } catch {}
-    try { await context.close(); } catch {}
+    // Every cleanup step gets its own hard timeout — a wedged page would
+    // otherwise let the adapter run way past its budget.
+    const withBudget = <T>(p: Promise<T>, ms: number): Promise<T | undefined> => {
+      return new Promise((resolve) => {
+        const t = setTimeout(() => resolve(undefined), ms);
+        p.then((v) => { clearTimeout(t); resolve(v); }, () => { clearTimeout(t); resolve(undefined); });
+      });
+    };
+    // Skip this screenshot if the adapter already saved one (e.g. a synthetic
+    // block evidence page). A failing screenshot here would truncate the file
+    // to 0 bytes and wipe the real evidence.
+    if (!evidenceSaved) {
+      await withBudget(page.screenshot({ path: paths.shot, fullPage: true }), 5_000);
+    }
+    if ((status as Status) !== "blocked") {
+      const bodyBlock = await withBudget(detectBlock(page), 3_000);
+      if (bodyBlock) networkBlock = networkBlock ?? bodyBlock;
+    }
+    await withBudget(context.close(), 5_000);
+  }
+
+  // Promote to blocked when the watcher saw a block and the adapter didn't
+  // settle on blocked itself. We clobber invalid_input in particular: a bot
+  // wall during postal-code validation is not the user's fault.
+  if (networkBlock && (status as Status) !== "blocked") {
+    status = "blocked";
+    error = networkBlock;
+    if (seenBlockedUrls.length) debug.blocked_urls = seenBlockedUrls;
   }
 
   const evidence: Evidence = {
@@ -166,6 +228,7 @@ export async function runAdapter(spec: AdapterSpec): Promise<CarrierResult> {
     site_echo: siteEcho,
     evidence,
     ms: Date.now() - started,
+    debug: Object.keys(debug).length ? debug : undefined,
   };
 }
 

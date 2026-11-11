@@ -56,11 +56,16 @@ function toolResultsConcat(trace: TraceEvent): string {
 }
 
 function amountInResults(amount: string, haystack: string): boolean {
-  const norm = normalizeMoney(amount);
-  if (!norm) return false;
-  const plain = norm.replace(/\.00$/, "");
-  const hayNorm = haystack.replace(/[\s,]/g, "");
-  return hayNorm.includes(norm) || hayNorm.includes(plain);
+  // Numeric comparison with ±0.01 tolerance — the tool result is JSON, so
+  // "1168.10" in the answer and 1168.1 in the stored price would never
+  // string-match, but they're the same amount. We extract every money-shaped
+  // number from the haystack and compare numerically.
+  const value = Number(normalizeMoney(amount));
+  if (!Number.isFinite(value)) return false;
+  const nums = (haystack.match(/-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?/g) ?? [])
+    .map((s) => Number(s.replace(/,/g, "")))
+    .filter((n) => Number.isFinite(n));
+  return nums.some((n) => Math.abs(n - value) <= 0.01);
 }
 
 // ---- checks ----
@@ -201,7 +206,10 @@ function checkCheapestPriority(trace: TraceEvent): CheckResult {
 
 function checkDeadlineHandled(answer: string, trace: TraceEvent): CheckResult {
   const amounts = extractAmounts(answer);
-  if (amounts.length === 0 && /\?/.test(answer)) return { name: "deadlineHandled", pass: true, note: "asked user" };
+  // Credit the "asked user for missing data" branch when there's no price AND
+  // the answer uses asking-form language (ASK_RE), same rule as mustAsk.
+  // A literal '?' is sufficient but not required.
+  if (amounts.length === 0 && ASK_RE.test(answer)) return { name: "deadlineHandled", pass: true, note: "asked user" };
   const calls = findQuoteCalls(trace);
   const hasDeadline = calls.some((c) => /(deadline|next[_ ]?day|dia[_ ]?siguiente|tomorrow|mañana|urgent)/i.test(JSON.stringify(c.input)));
   if (!hasDeadline) return { name: "deadlineHandled", pass: false, note: "no deadline set and no clarification question" };
@@ -436,7 +444,7 @@ async function main() {
   fs.writeFileSync(path.join("traces", `${stamp}-summary.json`), JSON.stringify({ totals, cases: summary }, null, 2));
   console.log("\ntotals:", totals);
 
-  try { const t = await import("./tools.js"); await (t as any).closeBrowser?.(); } catch {}
+  try { const t = await import("./carriers/common.js"); await (t as any).closeBrowser?.(); } catch {}
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

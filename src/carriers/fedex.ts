@@ -37,29 +37,44 @@ async function dismissCookies(page: Page): Promise<void> {
 }
 
 // Type the CP, wait for Google Places listbox, pick the Mexican match.
-// Throws a special Error with .reason === "invalid_input" when nothing matches
-// (user-fault: CP doesn't exist in Mexico).
-async function pickMexicanSuggestion(page: Page, selector: string, cp: string): Promise<string> {
+// Returns the chosen label (for site_echo) together with the full list of
+// suggestion texts we saw. The caller inspects `suggestions.length` to tell
+// a true "no match in Mexico" (invalid_input) from "listbox never populated"
+// (likely block — bot wall killed the Places call).
+async function pickMexicanSuggestion(
+  page: Page,
+  selector: string,
+  cp: string,
+): Promise<{ picked: string; suggestions: string[]; listboxVisible: boolean }> {
   await page.locator(selector).click();
-  await page.fill(selector, cp);
-  // Google Places suggestion container uses role="listbox"; just typing is
-  // enough — no keyboard events needed.
+  // pressSequentially-like: clear then type character by character — some
+  // autocompletes don't fire on fill().
+  await page.locator(selector).fill("");
+  await page.locator(selector).pressSequentially(cp, { delay: 20 });
+
   const listbox = page.locator("ul[role='listbox'], [role='listbox']").first();
-  await listbox.waitFor({ state: "visible", timeout: 8_000 }).catch(() => {});
+  let listboxVisible = false;
+  try {
+    await listbox.waitFor({ state: "visible", timeout: 8_000 });
+    listboxVisible = true;
+  } catch { /* listbox never appeared */ }
+
   const options = listbox.locator("[role='option'], li");
-  const count = await options.count().catch(() => 0);
+  const count = listboxVisible ? await options.count().catch(() => 0) : 0;
+  const suggestions: string[] = [];
+  let match = -1;
   for (let i = 0; i < count; i++) {
-    const text = (await options.nth(i).textContent().catch(() => "")) ?? "";
-    if (text.includes(cp) && /M[eé]xico/i.test(text)) {
-      await options.nth(i).click();
-      // Settle the Angular form: read the field back.
-      const picked = await page.inputValue(selector).catch(() => "");
-      return picked || text.trim();
-    }
+    const text = ((await options.nth(i).textContent().catch(() => "")) ?? "").trim().replace(/\s+/g, " ");
+    if (!text) continue;
+    suggestions.push(text);
+    if (match === -1 && text.includes(cp) && /M[eé]xico/i.test(text)) match = i;
   }
-  const err: any = new Error(`FedEx no reconoció el código postal ${cp}`);
-  err.reason = "invalid_input";
-  throw err;
+  if (match === -1) {
+    return { picked: "", suggestions, listboxVisible };
+  }
+  await options.nth(match).click();
+  const picked = (await page.inputValue(selector).catch(() => "")) || suggestions[match];
+  return { picked, suggestions, listboxVisible };
 }
 
 async function assertUnitsMetric(page: Page): Promise<void> {
@@ -202,19 +217,43 @@ export async function quoteFedex(args: FedexArgs): Promise<CarrierResult> {
       }
 
       // 1. Origin / destination via Places autocomplete (mandatory to pick a suggestion).
-      // Only the "no Mexican match" branch is invalid_input; everything else is error.
+      // Invalid_input only when suggestions actually loaded and none matched the
+      // CP; if the listbox never populated AND mid-flow network block is seen,
+      // it's a bot wall — the shared watcher in runAdapter will promote the
+      // final status to "blocked". Errors otherwise.
       let originEcho = "", destEcho = "";
+      const classifyNoMatch = (which: "origen" | "destino", cp: string, listboxVisible: boolean, suggestions: string[]): void => {
+        ctx.setDebug(`${which === "origen" ? "origin" : "destination"}_suggestions`, suggestions);
+        const block = ctx.blockSeen();
+        if (block) { ctx.setStatus("blocked"); ctx.setError(`Akamai bloqueó la validación del código postal (${which}): ${block}`); return; }
+        if (!listboxVisible || suggestions.length === 0) {
+          ctx.setStatus("error");
+          ctx.setError(`FedEx no abrió el autocompletado de ${which} (sin red bloqueada visible)`);
+          return;
+        }
+        ctx.setStatus("invalid_input");
+        ctx.setError(`FedEx no reconoció el código postal ${cp} (${which}): ${suggestions.slice(0, 3).join(" | ")}`);
+      };
+
       try {
-        originEcho = await pickMexicanSuggestion(ctx.page, "#fromGoogleAddress", args.origin_cp);
+        const r = await pickMexicanSuggestion(ctx.page, "#fromGoogleAddress", args.origin_cp);
+        ctx.setDebug("origin_suggestions", r.suggestions);
+        if (!r.picked) { classifyNoMatch("origen", args.origin_cp, r.listboxVisible, r.suggestions); return { rates: [] }; }
+        originEcho = r.picked;
       } catch (e: any) {
-        if (e?.reason === "invalid_input") { ctx.setStatus("invalid_input"); ctx.setError(e.message); return { rates: [] }; }
+        const block = ctx.blockSeen();
+        if (block) { ctx.setStatus("blocked"); ctx.setError(`Akamai: ${block}`); return { rates: [] }; }
         ctx.setStatus("error"); ctx.setError(e?.message ?? "could not fill origin");
         return { rates: [] };
       }
       try {
-        destEcho = await pickMexicanSuggestion(ctx.page, "#toGoogleAddress", args.destination_cp);
+        const r = await pickMexicanSuggestion(ctx.page, "#toGoogleAddress", args.destination_cp);
+        ctx.setDebug("destination_suggestions", r.suggestions);
+        if (!r.picked) { classifyNoMatch("destino", args.destination_cp, r.listboxVisible, r.suggestions); return { rates: [] }; }
+        destEcho = r.picked;
       } catch (e: any) {
-        if (e?.reason === "invalid_input") { ctx.setStatus("invalid_input"); ctx.setError(e.message); return { rates: [] }; }
+        const block = ctx.blockSeen();
+        if (block) { ctx.setStatus("blocked"); ctx.setError(`Akamai: ${block}`); return { rates: [] }; }
         ctx.setStatus("error"); ctx.setError(e?.message ?? "could not fill destination");
         return { rates: [] };
       }

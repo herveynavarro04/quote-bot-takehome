@@ -1,0 +1,149 @@
+{
+  "totals": {
+    "model": "claude-sonnet-5-5",
+    "ran": 3,
+    "passed": 3,
+    "pass_rate": 1,
+    "avg_time_ms": 10094,
+    "total_cost_usd": 0.023458,
+    "unbacked_price_cases": 0
+  },
+  "cases": [
+    {
+      "id": 1,
+      "message": "Cuánto cuesta mandar una caja de 2 kg de 64000 a 06600? mide 30x20x15 cm",
+      "model": "claude-sonnet-5-5",
+      "elapsed_ms": 24555,
+      "cost_usd": 0.01186,
+      "tokens": {
+        "input": 4235,
+        "output": 339
+      },
+      "tool_calls": [
+        {
+          "name": "quote_shipment",
+          "input": {
+            "type": "package",
+            "origin_cp": "64000",
+            "destination_cp": "06600",
+            "parcels": [
+              {
+                "weight": 2,
+                "weight_unit": "kg",
+                "length": 30,
+                "width": 20,
+                "height": 15,
+                "dim_unit": "cm",
+                "quantity": 1
+              }
+            ]
+          },
+          "result": "{\"status\":\"ok\",\"normalized\":{\"origin_cp\":\"64000\",\"destination_cp\":\"06600\",\"parcels\":[{\"real_kg\":2,\"length_cm\":30,\"width_cm\":20,\"height_cm\":15,\"volumetric_kg\":1.8,\"billable_kg\":2,\"quantity\":1}],\"type\":\"package\",\"priority\":\"cheapest\",\"warnings\":[]},\"carriers\":[{\"carrier\":\"estafeta\",\"status\":\"ok\",\"rates\":[{\"service\":\"12:30\",\"price_mxn\":585.89,\"iva\":\"included\",\"speed_rank\":1,\"next_day\":true},{\"service\":\"Dia Sig.\",\"price_mxn\":499.42,\"iva\":\"included\",\"speed_rank\":2,\"next_day\":true},{\"service\":\"2 Dias\",\"price_mxn\":467.52,\"iva\":\"included\",\"speed_rank\":3,\"next_day\":false},{\"service\":\"Terrestre\",\"price_mxn\":428.29,\"iva\":\"included\",\"speed_rank\":4,\"next_day\":false}],\"method\":\"network\",\"warnings\":[\"price_is_approximate\"],\"site_echo\":{\"origin\":\"64000 \",\"destination\":\"CP 06600 \",\"billed_weight_kg\":2},\"evidence\":{\"url\":\"https://cotizadorsitecorecms.azurewebsites.net/Cotizador/\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-10-04-687Z-estafeta.png\",\"captured_at\":\"2026-11-11T22:10:04.687Z\"},\"ms\":1864},{\"carrier\":\"fedex\",\"status\":\"blocked\",\"rates\":[],\"error\":\"akamai block page (incident id present)\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.fedex.com/es-mx/online/rating.html\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-10-04-704Z-fedex.png\",\"captured_at\":\"2026-11-11T22:10:04.704Z\"},\"ms\":995},{\"carrier\":\"dhl\",\"status\":\"blocked\",\"rates\":[],\"error\":\"DHL rechazó la conexión desde Chromium headless (page.goto: Timeout 20000ms exceeded.) — bloqueo a nivel de red por bot detection\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.dhl.com/mx-es/home/envio/cotizacion-envio.html\",\"screenshot\":\"evidence/2026-11-11/2026-11-11T22-10-04-705Z-dhl.png\",\"captured_at\":\"2026-11-11T22:10:04.705Z\"},\"ms\":20844,\"debug\":{\"goto_first_error\":\"page.goto: Timeout 20000ms exceeded.\",\"evidence_strategy\":\"reset_existing_page\"}}],\"ranked\":[{\"carrier\":\"estafeta\",\"service\":\"Terrestre\",\"price_mxn\":428.29,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":4},{\"carrier\":\"estafeta\",\"service\":\"2 Dias\",\"price_mxn\":467.52,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":3},{\"carrier\":\"estafeta\",\"service\":\"Dia Sig.\",\"price_mxn\":499.42,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":2},{\"carrier\":\"estafeta\",\"service\":\"12:30\",\"price_mxn\":585.89,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":1}],\"warnings\":[\"price_is_approximate\"]}"
+        }
+      ],
+      "answer": "La opción más barata es **Estafeta Terrestre, a $428.29 MXN** con IVA incluido. Si necesitas que llegue antes, Estafeta Día Siguiente cuesta $499.42 MXN.\n\n- **Aviso:** Estafeta marca los precios como aproximados.\n- **No se pudo cotizar:** FedEx y DHL aparecen como \"blocked\" porque sus sitios bloquearon la consulta automática. No tengo precios de ellos.",
+      "checks": [
+        {
+          "name": "noUnbackedPrice",
+          "pass": true
+        },
+        {
+          "name": "evidenceOk",
+          "pass": true
+        },
+        {
+          "name": "warningsMentioned",
+          "pass": true
+        },
+        {
+          "name": "mustQuote",
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "carrier_statuses": "estafeta:ok fedex:blocked dhl:blocked"
+    },
+    {
+      "id": 6,
+      "message": "Envío de 3 kg de 44100 a 97000, compárame Estafeta, DHL y FedEx por favor",
+      "model": "claude-sonnet-5-5",
+      "elapsed_ms": 2519,
+      "cost_usd": 0.005306,
+      "tokens": {
+        "input": 1453,
+        "output": 240
+      },
+      "tool_calls": [],
+      "answer": "Para cotizar necesito las medidas de la caja: largo, ancho y alto, en cm o en pulgadas. Con eso comparo Estafeta, DHL y FedEx para 3 kg de 44100 a 97000.\n\nSi quieres incluir valor declarado, dímelo también. Es opcional.",
+      "checks": [
+        {
+          "name": "noUnbackedPrice",
+          "pass": true
+        },
+        {
+          "name": "evidenceOk",
+          "pass": true
+        },
+        {
+          "name": "warningsMentioned",
+          "pass": true
+        },
+        {
+          "name": "mustAsk",
+          "pass": true
+        },
+        {
+          "name": "noPrice",
+          "pass": true
+        },
+        {
+          "name": "noCarrierContacted",
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "carrier_statuses": "-"
+    },
+    {
+      "id": 10,
+      "message": "hola, cuánto sale enviar algo a Oaxaca?",
+      "model": "claude-sonnet-5-5",
+      "elapsed_ms": 3207,
+      "cost_usd": 0.006292,
+      "tokens": {
+        "input": 1436,
+        "output": 342
+      },
+      "tool_calls": [],
+      "answer": "¡Hola! Para cotizar necesito estos datos:\n\n1. **Origen:** código postal o ciudad desde donde envías.\n2. **Destino:** código postal en Oaxaca. Si no lo tienes, dime la ciudad.\n3. **Tipo:** paquete o sobre (documentos).\n4. **Peso** del paquete, en kg o lb.\n5. **Medidas de la caja:** largo, ancho y alto, en cm o pulgadas.\n6. **Cuántas cajas** son, si hay más de una.\n\nSi quieres, también dime el valor declarado para el seguro. Además puedes indicarme si buscas lo más barato, lo más rápido o una fecha límite.",
+      "checks": [
+        {
+          "name": "noUnbackedPrice",
+          "pass": true
+        },
+        {
+          "name": "evidenceOk",
+          "pass": true
+        },
+        {
+          "name": "warningsMentioned",
+          "pass": true
+        },
+        {
+          "name": "mustAsk",
+          "pass": true
+        },
+        {
+          "name": "noPrice",
+          "pass": true
+        },
+        {
+          "name": "noCarrierContacted",
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "carrier_statuses": "-"
+    }
+  ]
+}

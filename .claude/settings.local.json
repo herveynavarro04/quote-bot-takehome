@@ -4,7 +4,9 @@
       "Bash(npx tsc *)",
       "Bash(git add *)",
       "Bash(npm install *)",
-      "Bash(QB_PROMPT_VERSION=v2 npx tsx -e ' *)"
+      "Bash(QB_PROMPT_VERSION=v2 npx tsx -e ' *)",
+      "Bash(node tests/whatsapp.test.mjs)",
+      "Bash(node *)"
     ]
   }
 }

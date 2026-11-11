@@ -33,6 +33,9 @@ export interface CarrierResult {
   site_echo?: { origin?: string; destination?: string; billed_weight_kg?: number };
   evidence: Evidence;
   ms: number;
+  // Optional debugging bucket preserved in the trace: suggestion lists we saw,
+  // which network response we parsed, etc. Not shown in the UI.
+  debug?: Record<string, unknown>;
 }
 
 export interface NormalizedParcel {

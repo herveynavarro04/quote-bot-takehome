@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import type { Page } from "playwright";
 import type { CarrierResult, NormalizedParcel, Rate } from "./types.js";
 import { captureResponse, detectBlock, runAdapter } from "./common.js";
@@ -205,9 +204,6 @@ export async function quoteEstafeta(args: EstafetaArgs): Promise<CarrierResult> 
         try {
           const body = await resp.text();
           rawHtml = body;
-          const htmlFile = ctx.evidence.html;
-          fs.writeFileSync(htmlFile, body);
-          ctx.setRawHtmlPath(htmlFile);
           const parsed = parseEstafetaHtml(body);
           networkRates = parsed.rates;
           billedKg = parsed.billedKg;
@@ -224,7 +220,6 @@ export async function quoteEstafeta(args: EstafetaArgs): Promise<CarrierResult> 
       } catch {}
       try {
         const domHtml = await ctx.page.content();
-        if (!rawHtml) fs.writeFileSync(ctx.evidence.html, domHtml);
         const parsedDom = parseEstafetaHtml(domHtml);
         domRates = parsedDom.rates;
         if (!billedKg) billedKg = parsedDom.billedKg;
