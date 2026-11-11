@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>QuoteBot</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  #chat { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; width: 600px; }
+  .user { color: blue; margin: 8px 0; }
+  .bot { color: black; margin: 8px 0; }
+  #msg { width: 500px; }
+</style>
+</head>
+<body>
+  <h2>QuoteBot 📦</h2>
+  <div id="chat"></div>
+  <br>
+  <input id="msg" placeholder="Escribe tu envío...">
+  <button id="send">Enviar</button>
+
+<script>
+  var conversationId = String(Math.random());
+  var chat = document.getElementById("chat");
+
+  function add(cls, text) {
+    var div = document.createElement("div");
+    div.className = cls;
+    div.innerText = (cls == "user" ? "Tú: " : "Bot: ") + text;
+    chat.appendChild(div);
+  }
+
+  document.getElementById("send").onclick = async function () {
+    var input = document.getElementById("msg");
+    var text = input.value;
+    add("user", text);
+    input.value = "";
+    add("bot", "Cargando...");
+    var res = await fetch("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ conversationId: conversationId, message: text })
+    });
+    var data = await res.json();
+    chat.removeChild(chat.lastChild);
+    add("bot", data.answer);
+  };
+</script>
+</body>
+</html>

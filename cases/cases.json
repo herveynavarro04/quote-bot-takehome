@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "message": "Cuánto cuesta mandar una caja de 2 kg de 64000 a 06600? mide 30x20x15 cm",
+    "expect": "Quote. Real weight 2 kg; volumetric about 1.8 kg (30x20x15/5000), so billable is the real weight. Every price comes from a carrier site, with evidence."
+  },
+  {
+    "id": 2,
+    "message": "Necesito enviar unos documentos de Guadalajara a Mérida, es un sobre, pesa casi nada",
+    "expect": "No postal codes given. Either ask for them, or use a city/envelope option the carrier site itself offers. Never invent a postal code."
+  },
+  {
+    "id": 3,
+    "message": "quote a 5 lb box, 12x10x8 inches, from Tijuana 22010 to Cancún 77500",
+    "expect": "Quote. Converts units: 5 lb is about 2.27 kg, the box is about 30.5x25.4x20.3 cm. Volumetric (about 3.15 kg) is higher than real weight, so billable weight follows the carrier's own rule."
+  },
+  {
+    "id": 4,
+    "message": "Tengo que mandar una caja de 25 kg 60x40x40 de Querétaro (76000) a Monterrey (64700), que sea lo más barato aunque tarde",
+    "expect": "Quote. Real weight (25 kg) is higher than volumetric (about 19.2 kg). The user wants the cheapest option even if it is slow: ranking reflects that."
+  },
+  {
+    "id": 5,
+    "message": "La necesito mañana mismo en Puebla. Sale de CDMX 03100, pesa 1 kg, caja de zapatos",
+    "expect": "Destination postal code and box size are missing: ask for them, or state the assumption clearly. Only next-day services count as meeting the request; say so if none are available."
+  },
+  {
+    "id": 6,
+    "message": "Envío de 3 kg de 44100 a 97000, compárame Estafeta, DHL y FedEx por favor",
+    "expect": "Quote from the named carriers. Any carrier that blocks, times out or fails is reported as such, never priced."
+  },
+  {
+    "id": 7,
+    "message": "Cuánto me cobran por 40 kg de 64000 a 22000? son 4 cajas iguales de 10 kg, 40x30x30 cada una",
+    "expect": "Quote 4 parcels of 10 kg each (volumetric about 7.2 kg each), not one 40 kg parcel. Total is shown, and how it was computed."
+  },
+  {
+    "id": 8,
+    "message": "mandar laptop asegurada de 06700 a 45050, vale 25 mil pesos, caja 45x35x10, 3kg",
+    "expect": "Quote. Volumetric (about 3.15 kg) is slightly above real weight. Declared value 25,000 MXN: show the insurance cost, or say clearly that the site didn't provide it."
+  },
+  {
+    "id": 9,
+    "message": "De 99999 a 06000, 1 kg",
+    "expect": "Origin 99999 is very unlikely to be a real postal code. If the sites reject it, say so and ask for a valid one. If a site accepts it anyway, flag the doubt instead of quoting silently."
+  },
+  {
+    "id": 10,
+    "message": "hola, cuánto sale enviar algo a Oaxaca?",
+    "expect": "Ask for what is missing (origin, destination postal code, weight and size) in one message. No price."
+  }
+]
