@@ -5,13 +5,11 @@ import { runTurn, type TraceEvent, MODEL_NAME } from "./agent.js";
 
 const CASE_TIMEOUT_MS = Number(process.env.EVAL_CASE_TIMEOUT_MS ?? 180_000);
 
-// USD per 1M tokens. Default to Opus 4.x pricing; extend as needed.
-const PRICING: Record<string, { in: number; out: number }> = {
-  "claude-opus-4-7": { in: 15, out: 75 },
-  "claude-opus-4-6": { in: 15, out: 75 },
-  "claude-opus-5-5": { in: 15, out: 75 },
-  "claude-sonnet-4-6": { in: 3, out: 15 },
-  "claude-haiku-4-5": { in: 1, out: 5 },
+// USD per 1M tokens (public prices, Nov 2026: https://platform.claude.com/docs/en/about-claude/pricing)
+const PRICING: Record<string, { in: number; out: number; cacheWrite: number; cacheRead: number }> = {
+  "claude-opus-5-5":   { in: 4,   out: 20, cacheWrite: 5,    cacheRead: 0.20 },
+  "claude-sonnet-5-5": { in: 2,   out: 10, cacheWrite: 2.5,  cacheRead: 0.10 },
+  "claude-haiku-5-5":  { in: 0.1, out: 0.5, cacheWrite: 0.125, cacheRead: 0.01 }, // solo prompts ≤100k
 };
 
 function priceFor(model: string): { in: number; out: number } {
