@@ -50,7 +50,7 @@ Antes de cambiar nada construí el eval, para medir el "before" con la misma reg
 - **Lo que consideré y descarté:**
   - Presets de cajas y destinos: ahorran escribir, pero el cuello de botella es contestarle al cliente.
   - Filtro de "es regalo, tiene que llegar a tiempo": el ranking de día siguiente ya lo cubre en parte.
-  - Historial para el contador: es el siguiente paso natural, encima de la caché.
+  - Historial de cotizaciones (fecha, ruta, precio, IVA y evidencia) para revisar después y dárselo a su contador, que le pregunta si los precios incluyen IVA: es el siguiente paso natural, encima de la caché.
 
 ## Uso de IA
 - **Herramientas:** Claude como compañero de diseño (arquitectura, prompts, estas notas), Claude Code para implementar, y el navegador de Claude Desktop para explorar FedEx y DHL una sola vez cada uno.
@@ -62,9 +62,8 @@ Antes de cambiar nada construí el eval, para medir el "before" con la misma reg
 2. FedEx con su API oficial de tarifas (requiere cuenta de Mariana; no la bloquea Akamai) y DHL con su GET público.
 3. Dejar fijo el mapeo de tipos de tarifa de FedEx (regular vs. descuento). Hoy se deduce como máximo/mínimo.
 4. Cotizar el seguro opcional de Estafeta (caso 8) y quitar del mensaje de "falta información" la opción de dar ciudad en lugar de CP.
-5. Caché de 24 h en SQLite, más historial para el contador.
+5. Caché de 24 h en SQLite: si se repite la misma paquetería, ruta (CP origen y destino), peso y medidas, se responde sin volver a visitar el sitio. Las fallas se guardan solo unos minutos y la UI muestra la antigüedad del precio. La misma tabla sirve de historial para su contador.
 6. Correr el eval completo todos los días: detecta sitios que cambiaron (más fallas de red que caen al respaldo por DOM).
 7. Costos para 200 envíos al mes: ~$0.01 de LLM por cotización. El reto real son los bloqueos, no el costo.
 
 **Tiempo:** ~4 h 20 min. Me pasé unos 20 minutos, sobre todo explorando FedEx y DHL.
-
