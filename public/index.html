@@ -46,6 +46,132 @@
   table.rates tbody tr.clickable { cursor: pointer; }
   table.rates tbody tr.clickable:hover td { background: #f5f8ff; }
   .per-parcel { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+  .wa-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 12px; padding: 9px 14px;
+    background: #25d366; color: white; border: none; border-radius: 999px;
+    font: inherit; font-weight: 600; font-size: 13px; cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    transition: filter .15s, transform .05s;
+  }
+  .wa-btn:hover { filter: brightness(.95); }
+  .wa-btn:active { transform: translateY(1px); }
+  .wa-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(15,15,20,.45);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50; padding: 16px;
+    animation: wa-fade .12s ease-out;
+  }
+  @keyframes wa-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes wa-pop { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
+  .modal {
+    background: var(--panel); border-radius: 14px;
+    width: 100%; max-width: 480px; max-height: 92vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 20px 48px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.08);
+    animation: wa-pop .14s ease-out;
+  }
+  .modal header {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .modal header h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .modal header .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .modal .close-x {
+    background: none; border: none; cursor: pointer;
+    width: 28px; height: 28px; border-radius: 6px;
+    color: var(--muted); font-size: 18px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .modal .close-x:hover { background: #f1f1f3; color: var(--fg); }
+  .modal .body { padding: 14px 16px; overflow-y: auto; }
+
+  .wa-section-label {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .06em;
+    margin: 0 0 8px;
+  }
+
+  .wa-options { list-style: none; padding: 0; margin: 0 0 6px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .wa-options li {
+    display: flex; gap: 10px; align-items: center;
+    padding: 10px 12px; border-bottom: 1px solid #f0f0f2;
+    font-size: 14px; background: var(--panel);
+    transition: background .1s;
+  }
+  .wa-options li:last-child { border-bottom: 0; }
+  .wa-options li:hover:not(.disabled) { background: #fafafb; }
+  .wa-options li.checked { background: #f0f9f3; }
+  .wa-options li.checked:hover { background: #e9f5ed; }
+  .wa-options input[type=checkbox] { accent-color: #25d366; width: 16px; height: 16px; flex-shrink: 0; }
+  .wa-options .opt-main { flex: 1; min-width: 0; }
+  .wa-options .opt-title { font-weight: 500; color: var(--fg); }
+  .wa-options .opt-carrier { font-weight: 600; }
+  .wa-options .opt-service { color: #555; }
+  .wa-options .opt-meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .wa-options .opt-price { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fg); white-space: nowrap; }
+  .wa-options li.disabled { opacity: .55; cursor: not-allowed; }
+  .wa-options li.disabled input[type=checkbox] { cursor: not-allowed; }
+
+  .wa-hint { color: var(--muted); font-size: 12px; margin: 10px 0 12px; min-height: 16px; }
+  .wa-hint.active { color: var(--warn); }
+
+  .wa-preview-wrap { position: relative; }
+  .wa-preview {
+    width: 100%; min-height: 150px;
+    padding: 12px 14px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: #fafafb;
+    font: inherit; font-size: 14px; line-height: 1.5;
+    resize: vertical;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .wa-preview:focus { outline: none; border-color: #25d366; box-shadow: 0 0 0 3px rgba(37,211,102,.15); background: var(--panel); }
+
+  .reset-row { display: flex; justify-content: flex-end; margin-top: 6px; min-height: 18px; }
+  .reset-link {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; padding: 2px 4px; font: inherit; font-size: 12px;
+  }
+  .reset-link:hover { color: var(--fg); text-decoration: underline; }
+
+  .modal footer {
+    padding: 12px 16px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center;
+    background: #fbfbfc;
+  }
+  .modal footer .spacer { flex: 1; }
+  .modal footer button {
+    padding: 9px 16px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--panel);
+    font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: background .1s, border-color .1s, filter .1s;
+  }
+  .modal footer button:hover { background: #f4f4f6; }
+  .modal footer button.primary {
+    background: #1a1a1a; border-color: #1a1a1a; color: white; font-weight: 600;
+  }
+  .modal footer button.primary:hover { background: #2a2a2a; }
+  .modal footer button.wa {
+    background: #25d366; border-color: #25d366; color: white; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .modal footer button.wa:hover { filter: brightness(.95); background: #25d366; }
+  .modal footer button.wa svg { width: 14px; height: 14px; }
+  .modal footer .copied {
+    color: var(--ok); font-size: 13px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 4px;
+    opacity: 0; transition: opacity .15s;
+  }
+  .modal footer .copied.show { opacity: 1; }
+
+  @media (max-width: 520px) {
+    .modal { max-height: 100vh; border-radius: 0; max-width: 100%; }
+    .modal-backdrop { padding: 0; }
+  }
   .composer { display: flex; gap: 8px; margin-top: 12px; }
   #msg { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; resize: none; max-height: 140px; }
   #msg:focus { outline: 2px solid #c4d6ff; }
@@ -70,6 +196,10 @@
   </form>
 </div>
 
+<script type="module">
+import { buildWhatsAppMessage, getValidOptions, carrierLabel as waCarrierLabel } from "/whatsapp.js";
+window.__wa = { buildWhatsAppMessage, getValidOptions, waCarrierLabel };
+</script>
 <script>
 (() => {
   const conversationId = String(Math.random());
@@ -321,7 +451,214 @@
       wrap.appendChild(el("div", { class: "per-parcel", text: line }));
     }
 
+    // "Responder por WhatsApp" — only if at least one ok, non-doubtful rate exists.
+    const waOpts = (window.__wa?.getValidOptions(q) || []).filter(o => !o.doubtful);
+    if (waOpts.length > 0) {
+      const btn = el("button", { class: "wa-btn", type: "button" });
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.52 3.48A11.9 11.9 0 0 0 12.03 0C5.46 0 .13 5.33.13 11.9c0 2.1.55 4.14 1.6 5.95L0 24l6.3-1.65a11.9 11.9 0 0 0 5.72 1.46h.01c6.57 0 11.9-5.33 11.9-11.9 0-3.18-1.24-6.17-3.5-8.43zM12.03 21.8h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.64-.23-.37A9.87 9.87 0 0 1 2.2 11.9c0-5.46 4.44-9.9 9.9-9.9 2.65 0 5.13 1.03 7 2.9a9.84 9.84 0 0 1 2.9 7c0 5.46-4.44 9.9-9.97 9.9zm5.43-7.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.95 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.78-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.5l-.58-.01c-.2 0-.52.07-.8.37-.28.3-1.06 1.03-1.06 2.52 0 1.5 1.08 2.94 1.23 3.14.15.2 2.13 3.26 5.17 4.57.72.31 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.76-.72 2-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35z"/></svg>' + '<span>Responder por WhatsApp</span>';
+      btn.addEventListener("click", () => openWhatsAppModal(q));
+      wrap.appendChild(btn);
+    }
+
     return wrap;
+  }
+
+  // ---- WhatsApp modal -----------------------------------------------------
+  let waState = null; // { quote, selected:Set<string>, edited:boolean }
+
+  function openWhatsAppModal(quote) {
+    const options = window.__wa.getValidOptions(quote);
+    const firstSelectable = options.find(o => !o.doubtful);
+    const selected = new Set(firstSelectable ? [firstSelectable.id] : []);
+    waState = { quote, options, selected, edited: false };
+
+    const backdrop = el("div", { class: "modal-backdrop", role: "dialog", "aria-modal": "true" });
+    const modal = el("div", { class: "modal" });
+
+    const titleWrap = el("div", {},
+      el("h3", { text: "Responder por WhatsApp" }),
+      el("div", { class: "sub", text: "Selecciona hasta 2 opciones para el cliente" }),
+    );
+    const closeBtn = el("button", { class: "close-x", type: "button", "aria-label": "Cerrar" });
+    closeBtn.textContent = "×";
+    modal.appendChild(el("header", {}, titleWrap, closeBtn));
+
+    const body = el("div", { class: "body" });
+    body.appendChild(el("div", { class: "wa-section-label", text: "Opciones disponibles" }));
+
+    const list = el("ul", { class: "wa-options" });
+    for (const o of options) {
+      const li = el("li", {});
+      if (o.doubtful) li.classList.add("disabled");
+      if (selected.has(o.id)) li.classList.add("checked");
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = o.id;
+      cb.checked = selected.has(o.id);
+      cb.disabled = o.doubtful;
+      cb.addEventListener("change", (e) => { e.stopPropagation(); onToggle(o.id, cb.checked); });
+      li.appendChild(cb);
+
+      const main = el("div", { class: "opt-main" });
+      const title = el("div", { class: "opt-title" });
+      const carrierSpan = el("span", { class: "opt-carrier" });
+      carrierSpan.textContent = window.__wa.waCarrierLabel(o.carrier);
+      const serviceSpan = el("span", { class: "opt-service" });
+      serviceSpan.textContent = " " + o.service;
+      title.appendChild(carrierSpan);
+      title.appendChild(serviceSpan);
+      main.appendChild(title);
+
+      const metaBits = [];
+      if (o.next_day) metaBits.push("llega mañana");
+      else if (o.delivery_text) metaBits.push(o.delivery_text);
+      if (o.doubtful) metaBits.push("verificar primero");
+      if (metaBits.length) {
+        const meta = el("div", { class: "opt-meta" });
+        meta.textContent = metaBits.join(" · ");
+        main.appendChild(meta);
+      }
+      li.appendChild(main);
+
+      const price = el("div", { class: "opt-price" });
+      price.textContent = fmtMoney(o.price_mxn);
+      li.appendChild(price);
+
+      // make the whole row clickable (except when disabled)
+      if (!o.doubtful) {
+        li.style.cursor = "pointer";
+        li.addEventListener("click", (e) => {
+          if (e.target === cb) return;
+          if (cb.disabled) return;
+          cb.checked = !cb.checked;
+          onToggle(o.id, cb.checked);
+        });
+      }
+      list.appendChild(li);
+    }
+    body.appendChild(list);
+
+    const hint = el("div", { class: "wa-hint", text: "" });
+    body.appendChild(hint);
+
+    body.appendChild(el("div", { class: "wa-section-label", text: "Mensaje" }));
+    const previewWrap = el("div", { class: "wa-preview-wrap" });
+    const preview = document.createElement("textarea");
+    preview.className = "wa-preview";
+    preview.spellcheck = false;
+    preview.addEventListener("input", () => { waState.edited = true; resetBtn.style.visibility = "visible"; });
+    previewWrap.appendChild(preview);
+    body.appendChild(previewWrap);
+
+    const resetRow = el("div", { class: "reset-row" });
+    const resetBtn = el("button", { class: "reset-link", type: "button", text: "↻ Restablecer texto" });
+    resetBtn.style.visibility = "hidden";
+    resetBtn.addEventListener("click", () => {
+      waState.edited = false;
+      resetBtn.style.visibility = "hidden";
+      regen();
+    });
+    resetRow.appendChild(resetBtn);
+    body.appendChild(resetRow);
+
+    modal.appendChild(body);
+
+    const copiedLabel = el("span", { class: "copied" });
+    copiedLabel.textContent = "✓ ¡Copiado!";
+    const closeFooterBtn = el("button", { type: "button", text: "Cerrar" });
+    const copyBtn = el("button", { class: "primary", type: "button", text: "Copiar" });
+    const waBtn = el("button", { class: "wa", type: "button" });
+    waBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.52 3.48A11.9 11.9 0 0 0 12.03 0C5.46 0 .13 5.33.13 11.9c0 2.1.55 4.14 1.6 5.95L0 24l6.3-1.65a11.9 11.9 0 0 0 5.72 1.46h.01c6.57 0 11.9-5.33 11.9-11.9 0-3.18-1.24-6.17-3.5-8.43zM12.03 21.8h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.64-.23-.37A9.87 9.87 0 0 1 2.2 11.9c0-5.46 4.44-9.9 9.9-9.9 2.65 0 5.13 1.03 7 2.9a9.84 9.84 0 0 1 2.9 7c0 5.46-4.44 9.9-9.97 9.9z"/></svg><span>Abrir WhatsApp</span>';
+    modal.appendChild(el("footer", {},
+      copiedLabel,
+      el("span", { class: "spacer" }),
+      closeFooterBtn,
+      copyBtn,
+      waBtn,
+    ));
+
+    function onToggle(id, checked) {
+      if (checked) selected.add(id);
+      else selected.delete(id);
+      if (selected.size > 2) {
+        selected.delete(id);
+        const cbs = list.querySelectorAll("input[type=checkbox]");
+        for (const c of cbs) if (c.value === id) c.checked = false;
+      }
+      const atMax = selected.size >= 2;
+      const items = list.querySelectorAll("li");
+      for (const li of items) {
+        const c = li.querySelector("input[type=checkbox]");
+        if (!c) continue;
+        const opt = options.find(o => o.id === c.value);
+        if (!opt) continue;
+        li.classList.toggle("checked", c.checked && !opt.doubtful);
+        if (opt.doubtful) { c.disabled = true; continue; }
+        c.disabled = atMax && !c.checked;
+      }
+      hint.textContent = atMax ? "Máximo 2 opciones para el cliente." : "";
+      hint.classList.toggle("active", atMax);
+      waState.edited = false;
+      resetBtn.style.visibility = "hidden";
+      regen();
+    }
+
+    function regen() {
+      if (waState.edited) return;
+      const ids = [];
+      for (const o of options) if (selected.has(o.id)) ids.push(o.id);
+      preview.value = window.__wa.buildWhatsAppMessage(quote, ids, new Date());
+    }
+
+    async function doCopy() {
+      const text = preview.value;
+      let ok = false;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          ok = true;
+        }
+      } catch { ok = false; }
+      if (!ok) {
+        try {
+          preview.focus();
+          preview.select();
+          ok = document.execCommand("copy");
+        } catch { ok = false; }
+      }
+      if (ok) {
+        copiedLabel.textContent = "✓ ¡Copiado!";
+        copiedLabel.style.color = "";
+      } else {
+        copiedLabel.textContent = "No se pudo copiar";
+        copiedLabel.style.color = "var(--err)";
+      }
+      copiedLabel.classList.add("show");
+      setTimeout(() => { copiedLabel.classList.remove("show"); }, 2000);
+    }
+
+    function openWa() {
+      const url = "https://wa.me/?text=" + encodeURIComponent(preview.value);
+      window.open(url, "_blank", "noopener");
+    }
+
+    function close() {
+      document.removeEventListener("keydown", onKey);
+      backdrop.remove();
+      waState = null;
+    }
+    function onKey(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onKey);
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
+    closeBtn.addEventListener("click", close);
+    closeFooterBtn.addEventListener("click", close);
+    copyBtn.addEventListener("click", doCopy);
+    waBtn.addEventListener("click", openWa);
+
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+    regen();
   }
 
   function describeFailure(c) {

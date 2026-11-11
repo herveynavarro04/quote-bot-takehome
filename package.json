@@ -8,7 +8,8 @@
     "chat": "tsx src/cli.ts",
     "case": "tsx src/run-case.ts",
     "eval": "tsx --env-file=.env src/eval.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/whatsapp.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",

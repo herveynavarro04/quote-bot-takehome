@@ -71,6 +71,12 @@ const server = http.createServer(async (req, res) => {
 
   if (serveEvidence(req, res)) return;
 
+  if (req.method === "GET" && req.url === "/whatsapp.js") {
+    res.writeHead(200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "no-cache" });
+    res.end(fs.readFileSync("public/whatsapp.js"));
+    return;
+  }
+
   if (req.method === "GET" && (req.url === "/" || req.url === "/chat" || req.url === "/index.html")) {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8", "set-cookie": "qb_started=1; Path=/; Max-Age=31536000; SameSite=Lax" });
     res.end(fs.readFileSync("public/index.html"));
