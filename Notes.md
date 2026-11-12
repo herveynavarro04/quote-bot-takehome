@@ -42,7 +42,7 @@ Antes de cambiar nada construí el eval, para medir el "before" con la misma reg
 - **El caso 1 lo dice todo.** Antes: 79 s y $3.02, sin precio. Ahora: precios reales de Estafeta con evidencia, y FedEx y DHL reportados como bloqueados por Akamai, en ~25 s y por $0.012 (~250× más barato).
 - **Casos 3 (lb/in) y 7 (cuatro cajas)** pasan con la conversión y la suma hechas en código. Los casos que preguntan (6 y 10) responden en ~3 s sin tocar ningún sitio.
 - **Cómo se mide:** chequeos deterministas sobre la traza estructurada, sin juez LLM (precio respaldado, preguntó lo que faltaba, estados por paquetería, unidades, ranking). El "before" se calificó con la versión anterior de los chequeos.
-- **Traza de un bloqueo real:** `traces/after/2026-11-11-case-1.json` (FedEx y DHL `blocked`, con capturas en `evidence/`). Con Playwright, Akamai bloqueó a FedEx y DHL; en un navegador normal no.
+- **Traza de un bloqueo real:** `traces/2026-11-12-case-1.json` (FedEx y DHL `blocked`, con capturas en `evidence/2026-11-12/`). Con Playwright, Akamai bloqueó a FedEx y DHL; en un navegador normal no.
 
 ## Funcionalidad: "Responder por WhatsApp"
 - **Para quién:** Mariana, cuando un cliente pregunta por WhatsApp cuánto cuesta el envío antes de comprar ("necesito una respuesta en un minuto").
