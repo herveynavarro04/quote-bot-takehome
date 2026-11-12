@@ -1,0 +1,53 @@
+{
+  "id": 1,
+  "message": "Cuánto cuesta mandar una caja de 2 kg de 64000 a 06600? mide 30x20x15 cm",
+  "model": "claude-sonnet-5-5",
+  "elapsed_ms": 24728,
+  "cost_usd": 0.011672,
+  "tokens": {
+    "input": 4236,
+    "output": 320
+  },
+  "tool_calls": [
+    {
+      "name": "quote_shipment",
+      "input": {
+        "type": "package",
+        "origin_cp": "64000",
+        "destination_cp": "06600",
+        "parcels": [
+          {
+            "weight": 2,
+            "weight_unit": "kg",
+            "length": 30,
+            "width": 20,
+            "height": 15,
+            "dim_unit": "cm",
+            "quantity": 1
+          }
+        ]
+      },
+      "result": "{\"status\":\"ok\",\"normalized\":{\"origin_cp\":\"64000\",\"destination_cp\":\"06600\",\"parcels\":[{\"real_kg\":2,\"length_cm\":30,\"width_cm\":20,\"height_cm\":15,\"volumetric_kg\":1.8,\"billable_kg\":2,\"quantity\":1}],\"type\":\"package\",\"priority\":\"cheapest\",\"warnings\":[]},\"carriers\":[{\"carrier\":\"estafeta\",\"status\":\"ok\",\"rates\":[{\"service\":\"12:30\",\"price_mxn\":585.89,\"iva\":\"included\",\"speed_rank\":1,\"next_day\":true},{\"service\":\"Dia Sig.\",\"price_mxn\":499.42,\"iva\":\"included\",\"speed_rank\":2,\"next_day\":true},{\"service\":\"2 Dias\",\"price_mxn\":467.52,\"iva\":\"included\",\"speed_rank\":3,\"next_day\":false},{\"service\":\"Terrestre\",\"price_mxn\":428.29,\"iva\":\"included\",\"speed_rank\":4,\"next_day\":false}],\"method\":\"network\",\"warnings\":[\"price_is_approximate\"],\"site_echo\":{\"origin\":\"64000 \",\"destination\":\"CP 06600 \",\"billed_weight_kg\":2},\"evidence\":{\"url\":\"https://cotizadorsitecorecms.azurewebsites.net/Cotizador/\",\"screenshot\":\"evidence/2026-11-12/2026-11-12T03-31-13-329Z-estafeta.png\",\"captured_at\":\"2026-11-12T03:31:13.329Z\"},\"ms\":1994},{\"carrier\":\"fedex\",\"status\":\"blocked\",\"rates\":[],\"error\":\"akamai block page (incident id present)\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.fedex.com/es-mx/online/rating.html\",\"screenshot\":\"evidence/2026-11-12/2026-11-12T03-31-13-338Z-fedex.png\",\"captured_at\":\"2026-11-12T03:31:13.338Z\"},\"ms\":1354},{\"carrier\":\"dhl\",\"status\":\"blocked\",\"rates\":[],\"error\":\"DHL rechazó la conexión desde Chromium headless (page.goto: Timeout 20000ms exceeded.) — bloqueo a nivel de red por bot detection\",\"warnings\":[],\"evidence\":{\"url\":\"https://www.dhl.com/mx-es/home/envio/cotizacion-envio.html\",\"screenshot\":\"evidence/2026-11-12/2026-11-12T03-31-13-339Z-dhl.png\",\"captured_at\":\"2026-11-12T03:31:13.339Z\"},\"ms\":20942,\"debug\":{\"goto_first_error\":\"page.goto: Timeout 20000ms exceeded.\",\"evidence_strategy\":\"reset_existing_page\"}}],\"ranked\":[{\"carrier\":\"estafeta\",\"service\":\"Terrestre\",\"price_mxn\":428.29,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":4},{\"carrier\":\"estafeta\",\"service\":\"2 Dias\",\"price_mxn\":467.52,\"iva\":\"included\",\"next_day\":false,\"speed_rank\":3},{\"carrier\":\"estafeta\",\"service\":\"Dia Sig.\",\"price_mxn\":499.42,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":2},{\"carrier\":\"estafeta\",\"service\":\"12:30\",\"price_mxn\":585.89,\"iva\":\"included\",\"next_day\":true,\"speed_rank\":1}],\"warnings\":[\"price_is_approximate\"]}"
+    }
+  ],
+  "answer": "La opción más barata es Estafeta Terrestre, a $428.29 MXN con IVA incluido. Si lo necesitas más rápido, Estafeta Día Siguiente cuesta $499.42 MXN. Todos los precios son aproximados.\n\nNo pude cotizar FedEx ni DHL porque sus sitios bloquearon la consulta (status: blocked). Por eso solo tengo precios de Estafeta.",
+  "checks": [
+    {
+      "name": "noUnbackedPrice",
+      "pass": true
+    },
+    {
+      "name": "evidenceOk",
+      "pass": true
+    },
+    {
+      "name": "warningsMentioned",
+      "pass": true
+    },
+    {
+      "name": "mustQuote",
+      "pass": true
+    }
+  ],
+  "pass": true
+}

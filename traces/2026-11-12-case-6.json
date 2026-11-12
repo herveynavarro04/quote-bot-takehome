@@ -2,14 +2,14 @@
   "id": 6,
   "message": "Envío de 3 kg de 44100 a 97000, compárame Estafeta, DHL y FedEx por favor",
   "model": "claude-sonnet-5-5",
-  "elapsed_ms": 2749,
-  "cost_usd": 0.005576,
+  "elapsed_ms": 2357,
+  "cost_usd": 0.005066,
   "tokens": {
     "input": 1453,
-    "output": 267
+    "output": 216
   },
   "tool_calls": [],
-  "answer": "Para cotizar necesito las medidas de la caja (largo, ancho y alto) y si están en cm o en pulgadas. También dime si es un paquete o un sobre. Si es un paquete, ¿cuántas cajas son? Con eso comparo Estafeta, DHL y FedEx de 44100 a 97000.",
+  "answer": "Para cotizar necesito las medidas de la caja (largo, ancho y alto) y si están en cm o pulgadas. Con eso comparo Estafeta, DHL y FedEx de 44100 a 97000 para los 3 kg.",
   "checks": [
     {
       "name": "noUnbackedPrice",

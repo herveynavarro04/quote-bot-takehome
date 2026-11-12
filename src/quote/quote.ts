@@ -100,6 +100,24 @@ function aggregateForCarrier(name: string, perParcel: CarrierResult[], parcels: 
   // Merge warnings/evidence from first non-empty
   const first = perParcel[0];
   const warnings = Array.from(new Set(perParcel.flatMap((p) => p.warnings)));
+
+  // Scale site_echo.billed_weight_kg by total quantity. Adapters quote one box
+  // and we multiply price × quantity above; the echoed billed weight has to be
+  // multiplied too, otherwise the model sees "10 kg" when the user asked about
+  // "40 kg" and plants doubt in the answer.
+  let scaledEcho = first.site_echo;
+  if (first.site_echo && typeof first.site_echo.billed_weight_kg === "number") {
+    let totalBilled = 0;
+    for (let i = 0; i < perParcel.length; i++) {
+      const be = perParcel[i].site_echo?.billed_weight_kg;
+      if (typeof be !== "number") { totalBilled = NaN; break; }
+      totalBilled += be * (parcels[i].quantity ?? 1);
+    }
+    if (Number.isFinite(totalBilled)) {
+      scaledEcho = { ...first.site_echo, billed_weight_kg: Number(totalBilled.toFixed(2)) };
+    }
+  }
+
   return {
     carrier: name,
     status: "ok",
@@ -107,7 +125,7 @@ function aggregateForCarrier(name: string, perParcel: CarrierResult[], parcels: 
     method: first.method,
     doubtful: perParcel.some((p) => p.doubtful) || undefined,
     warnings,
-    site_echo: first.site_echo,
+    site_echo: scaledEcho,
     evidence: first.evidence,
     ms: perParcel.reduce((a, p) => a + p.ms, 0),
   };

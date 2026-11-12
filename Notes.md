@@ -37,7 +37,7 @@ Antes de cambiar nada construí el eval, para medir el "before" con la misma reg
 | | Casos | Pasan | Tiempo prom. | Costo prom. | Precios sin respaldo |
 |---|---|---|---|---|---|
 | Before (starter: Opus + prompt original) | 1, 6, 10 | 1/3 | 53.6 s | $1.70 | 1 |
-| After (Sonnet + adapters) | 1, 3, 6, 7, 10 | 5/5 | 16.8 s | $0.011 | 0 |
+| After (Sonnet + adapters) | 1, 3, 6, 7, 10 | 5/5 | 15.8 s | $0.010 | 0 |
 
 - **El caso 1 lo dice todo.** Antes: 79 s y $3.02, sin precio. Ahora: precios reales de Estafeta con evidencia, y FedEx y DHL reportados como bloqueados por Akamai, en ~25 s y por $0.012 (~250× más barato).
 - **Casos 3 (lb/in) y 7 (cuatro cajas)** pasan con la conversión y la suma hechas en código. Los casos que preguntan (6 y 10) responden en ~3 s sin tocar ningún sitio.
@@ -56,6 +56,7 @@ Antes de cambiar nada construí el eval, para medir el "before" con la misma reg
 - **Herramientas:** Claude como compañero de diseño (arquitectura, prompts, estas notas), Claude Code para implementar, y el navegador de Claude Desktop para explorar FedEx y DHL una sola vez cada uno.
 - **Sugerencia rechazada: un juez LLM para el eval.** No es determinista, cuesta dinero y puede equivocarse. Con datos estructurados, los `expect` se verifican con código.
 - **Error de la IA que atrapé:** la tabla de precios del eval tenía Opus a $15/$75 por millón de tokens; el precio real es $4/$20. Inflaba el costo del "before" 3.75×. Lo detecté comparando contra la página oficial de precios.
+- **Error de la IA que atrapé:** en pedidos con varias cajas iguales, el precio se multiplicaba por la cantidad dos veces (en el adapter de Estafeta y otra vez en `aggregateForCarrier`). En el caso 7 (4 cajas de 10 kg), Terrestre salió en $12,461.92 en vez de $3,115.48 (4 × $778.87, el precio que muestra el sitio). El arreglo lo hice haciendo que los adapters regresan el precio por caja; solo `aggregateForCarrier` multiplica por la cantidad
 
 ## Qué haría después
 1. Mostrar los resultados conforme llegan, sin esperar a las paqueterías bloqueadas. El caso 1 tarda ~25 s solo por eso.
@@ -67,7 +68,20 @@ Antes de cambiar nada construí el eval, para medir el "before" con la misma reg
 
 **Tiempo:** ~4 h 20 min. Me pasé unos 20 minutos, sobre todo explorando FedEx y DHL.
 
-## Corrección después de la entrega (11 nov, 6:09p.m.)
+
 - **Bug:** en pedidos con varias cajas iguales, el precio se multiplicaba por la cantidad dos veces (en el adapter de Estafeta y otra vez en `aggregateForCarrier`). En el caso 7 (4 cajas de 10 kg), Terrestre salió en $12,461.92 en vez de $3,115.48 (4 × $778.87, el precio que muestra el sitio).
 - **Por qué no lo atrapé:** el guardrail y el eval verificaban que cada precio viniera del resultado de la herramienta, no que la suma fuera correcta.
 - **Arreglo:** los adapters regresan el precio por caja; solo `aggregateForCarrier` multiplica por la cantidad (commit `8e4e0d2`). La versión entregada es `2d83a2f`.
+
+## Capturas
+![Pantalla inicial del chat](notes/UI_landing.png)
+*Pantalla inicial. Mariana escribe el envío en lenguaje natural (caso 1: "Cuánto cuesta mandar una caja de 2 kg de 64000 a 06600? mide 30x20x15 cm").*
+
+![Cotizando en vivo](notes/UI_process.png)
+*Mientras se consultan los sitios en paralelo. El input y el botón se deshabilitan para evitar envíos duplicados.*
+
+![Tabla comparativa de cotización](notes/UI_quota_table.png)
+*Resultado del caso 1: recomendación corta del modelo, cabecera con ruta y peso cobrado, y tabla armada desde el resultado estructurado (precio, IVA, entrega y etiquetas "más barato" / "más rápido" / "llega mañana"). FedEx y DHL aparecen en su propia fila con el estado en lenguaje claro y un link para cotizar manualmente.*
+
+![Responder por WhatsApp](notes/UI_whatsapp_feature.png)
+*Modal "Responder por WhatsApp". Mariana elige hasta 2 opciones y copia o abre el mensaje listo en WhatsApp: precios con IVA, hora de la cotización y la nota de "aproximado" cuando el sitio lo marca.*

@@ -1,0 +1,40 @@
+{
+  "id": 10,
+  "message": "hola, cuánto sale enviar algo a Oaxaca?",
+  "model": "claude-sonnet-5-5",
+  "elapsed_ms": 2997,
+  "cost_usd": 0.006522,
+  "tokens": {
+    "input": 1436,
+    "output": 365
+  },
+  "tool_calls": [],
+  "answer": "¡Hola! Para cotizar necesito estos datos:\n\n1. **Tipo de envío:** ¿paquete o sobre (documentos)?\n2. **Origen:** código postal o ciudad desde donde sale.\n3. **Destino:** código postal en Oaxaca. Si no lo tienes, dime la ciudad.\n4. **Peso** del paquete, en kg o lb.\n5. **Medidas de la caja** (largo, ancho y alto), en cm o pulgadas. Esto no aplica para sobres.\n6. **Opcionales:**\n   - Valor declarado, si quieres asegurar el envío.\n   - Si prefieres lo más barato, lo más rápido o una fecha límite.\n   - Si quieres cotizar con alguna paquetería en particular.\n\nCon eso te cotizo.",
+  "checks": [
+    {
+      "name": "noUnbackedPrice",
+      "pass": true
+    },
+    {
+      "name": "evidenceOk",
+      "pass": true
+    },
+    {
+      "name": "warningsMentioned",
+      "pass": true
+    },
+    {
+      "name": "mustAsk",
+      "pass": true
+    },
+    {
+      "name": "noPrice",
+      "pass": true
+    },
+    {
+      "name": "noCarrierContacted",
+      "pass": true
+    }
+  ],
+  "pass": true
+}
