@@ -68,11 +68,6 @@ Antes de cambiar nada construí el eval, para medir el "before" con la misma reg
 
 **Tiempo:** ~4 h 20 min. Me pasé unos 20 minutos, sobre todo explorando FedEx y DHL.
 
-
-- **Bug:** en pedidos con varias cajas iguales, el precio se multiplicaba por la cantidad dos veces (en el adapter de Estafeta y otra vez en `aggregateForCarrier`). En el caso 7 (4 cajas de 10 kg), Terrestre salió en $12,461.92 en vez de $3,115.48 (4 × $778.87, el precio que muestra el sitio).
-- **Por qué no lo atrapé:** el guardrail y el eval verificaban que cada precio viniera del resultado de la herramienta, no que la suma fuera correcta.
-- **Arreglo:** los adapters regresan el precio por caja; solo `aggregateForCarrier` multiplica por la cantidad (commit `8e4e0d2`). La versión entregada es `2d83a2f`.
-
 ## Capturas
 ![Pantalla inicial del chat](notes/UI_landing.png)
 *Pantalla inicial. Mariana escribe el envío en lenguaje natural (caso 1: "Cuánto cuesta mandar una caja de 2 kg de 64000 a 06600? mide 30x20x15 cm").*
